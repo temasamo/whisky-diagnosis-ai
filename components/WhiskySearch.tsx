@@ -57,12 +57,13 @@ export default function WhiskySearch() {
         {items.map((it) => (
           <div key={`${it.mall}:${it.id}`} className="border rounded-xl p-3 flex flex-col">
             {it.image && (
-              <div className="w-full h-40 relative mb-2">
+              <div className="w-full h-40 mb-2 flex items-center justify-center bg-gray-50 rounded">
                 <Image
                   src={it.image}
                   alt={it.title}
-                  fill
-                  className="object-contain"
+                  width={160}
+                  height={160}
+                  className="object-contain max-w-full max-h-full"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 />
               </div>
