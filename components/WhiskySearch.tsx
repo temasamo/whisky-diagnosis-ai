@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Image from "next/image";
 
 type Item = {
   mall: "rakuten" | "yahoo";
@@ -55,7 +56,17 @@ export default function WhiskySearch() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {items.map((it) => (
           <div key={`${it.mall}:${it.id}`} className="border rounded-xl p-3 flex flex-col">
-            {it.image && <img src={it.image} alt={it.title} className="w-full h-40 object-contain mb-2" />}
+            {it.image && (
+              <div className="w-full h-40 relative mb-2">
+                <Image
+                  src={it.image}
+                  alt={it.title}
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                />
+              </div>
+            )}
             <div className="font-semibold line-clamp-3 mb-1">{it.title}</div>
             <div className="text-sm text-gray-600 mb-3">
               {it.price ? `${it.price.toLocaleString()} 円` : "価格不明"} / {it.mall.toUpperCase()}

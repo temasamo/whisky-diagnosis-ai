@@ -17,7 +17,7 @@ const RAKUTEN_APP_ID = process.env.RAKUTEN_APP_ID!;
 const YAHOO_APP_ID = process.env.YAHOO_APP_ID!;
 const NO_FILTER = process.env.NO_FILTER === "1";
 
-const take = (arr: any[], n: number) => arr.slice(0, n);
+const take = (arr: unknown[], n: number) => arr.slice(0, n);
 const clean = (s?: string | null) => (s || "").replace(/\s+/g, " ").trim();
 
 const parseVolume = (t: string): number | null => {
@@ -41,18 +41,18 @@ async function searchRakuten(q: string): Promise<Product[]> {
 
   const r = await fetch(u.toString());
   if (!r.ok) throw new Error(`rakuten ${r.status}`);
-  const j = await r.json();
+  const j = await r.json() as { Items?: { Item: Record<string, unknown> }[] };
 
-  const items = (j.Items || []).map((w: any) => w.Item);
-  return items.map((it: any): Product => {
-    const title = clean(it.itemName);
+  const items = (j.Items || []).map((w) => w.Item);
+  return items.map((it: Record<string, unknown>): Product => {
+    const title = clean(it.itemName as string);
     return {
       mall: "rakuten",
       id: String(it.itemCode || it.itemUrl),
       title,
       price: Number(it.itemPrice ?? null),
-      url: it.itemUrl,
-      image: it.mediumImageUrls?.[0]?.imageUrl || it.smallImageUrls?.[0]?.imageUrl || null,
+      url: it.itemUrl as string,
+      image: (it.mediumImageUrls as { imageUrl: string }[])?.[0]?.imageUrl || (it.smallImageUrls as { imageUrl: string }[])?.[0]?.imageUrl || null,
       brand: null,
       volume_ml: parseVolume(title),
       abv: parseAbv(title),
@@ -70,19 +70,19 @@ async function searchYahoo(q: string): Promise<Product[]> {
 
   const r = await fetch(u.toString());
   if (!r.ok) throw new Error(`yahoo ${r.status}`);
-  const j = await r.json();
+  const j = await r.json() as { hits?: Record<string, unknown>[] };
 
   const items = j.hits || [];
-  return items.map((it: any): Product => {
-    const title = clean(it.name);
+  return items.map((it: Record<string, unknown>): Product => {
+    const title = clean(it.name as string);
     return {
       mall: "yahoo",
       id: String(it.code || it.url),
       title,
-      price: Number(it.price ?? it.priceLabel?.defaultPrice ?? null),
-      url: it.url,
-      image: it.image?.medium || it.image?.small || null,
-      brand: it.brand?.name ?? null,
+      price: Number(it.price ?? (it.priceLabel as { defaultPrice: number })?.defaultPrice ?? null),
+      url: it.url as string,
+      image: (it.image as { medium?: string; small?: string })?.medium || (it.image as { medium?: string; small?: string })?.small || null,
+      brand: (it.brand as { name: string })?.name ?? null,
       volume_ml: parseVolume(title),
       abv: parseAbv(title),
     };
@@ -108,7 +108,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .sort((a, b) => (a.price ?? 9e9) - (b.price ?? 9e9));
 
     res.json({ query: q, count: merged.length, items: take(merged, 20) });
-  } catch (e: any) {
-    res.status(500).json({ error: e.message || "search_error" });
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : "search_error";
+    res.status(500).json({ error });
   }
 }

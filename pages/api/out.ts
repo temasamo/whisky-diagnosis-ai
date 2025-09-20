@@ -45,7 +45,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     res.writeHead(302, { Location: finalUrl });
     res.end();
-  } catch (e: any) {
-    res.status(400).json({ error: e.message || "bad_request" });
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : "bad_request";
+    res.status(400).json({ error });
   }
 }
