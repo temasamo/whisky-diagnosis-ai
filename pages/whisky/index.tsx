@@ -7,7 +7,7 @@ export default function WhiskyLanding() {
       <section className="text-center space-y-4">
         <h1 className="text-3xl md:text-5xl font-extrabold">ウイスキー診断</h1>
         <p className="text-gray-600 text-lg">3分で、あなたにぴったりの一本が見つかる。楽天・Yahoo・Amazonを横断して最安も提示。</p>
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex items-center justify-center gap-4">
           <Link href="/whisky/diagnose" className="px-5 py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition-colors">
             診断を始める
           </Link>
@@ -20,7 +20,7 @@ export default function WhiskyLanding() {
       {/* Popular shortcuts */}
       <section className="space-y-3">
         <h2 className="text-xl font-bold">人気のショートカット</h2>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           <Link href="/whisky/diagnose?preset=peat_strong" className="px-4 py-2 rounded-full border hover:bg-gray-50 transition-colors">
             ピート強め
           </Link>
