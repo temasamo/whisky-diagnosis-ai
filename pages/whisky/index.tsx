@@ -13,9 +13,11 @@ export default function WhiskyLanding() {
         {/* 上下に並べる：flex-col + gap */}
         <div className="flex flex-col items-center gap-3 mt-2">
           <Link href="/whisky/diagnose" className="inline-flex items-center px-5 py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition-colors">
+            <span className="mr-2">⚫️</span>
             診断を始める
           </Link>
           <Link href="/whisky/search" className="inline-flex items-center px-5 py-3 rounded-xl border hover:bg-gray-50 transition-colors">
+            <span className="mr-2">⚫️</span>
             キーワード検索へ
           </Link>
         </div>
