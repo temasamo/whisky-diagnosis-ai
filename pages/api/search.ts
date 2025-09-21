@@ -9,6 +9,12 @@ type RawProduct = {
   image: string | null; shop?: string | null; volume_ml?: number | null; abv?: number | null;
 };
 
+type GroupResult = {
+  key: string;
+  cheapest: RawProduct;
+  offers: RawProduct[];
+};
+
 const RAKUTEN_APP_ID = process.env.RAKUTEN_APP_ID!;
 const YAHOO_APP_ID = process.env.YAHOO_APP_ID!;
 const NO_FILTER = process.env.NO_FILTER === "1";
@@ -80,7 +86,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       (byKey[key] ||= []).push(p);
     }
 
-    const groups = Object.entries(byKey)
+    const groups: GroupResult[] = Object.entries(byKey)
       .map(([key, arr]) => {
         if (arr.length === 0) return null;
         
@@ -94,7 +100,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
         return { key, cheapest, offers: arr };
       })
-      .filter(Boolean);
+      .filter((item): item is GroupResult => item !== null);
 
     const ranked = groups.sort((a,b) => {
       const ap = a.cheapest.price ?? 9e12, bp = b.cheapest.price ?? 9e12;
