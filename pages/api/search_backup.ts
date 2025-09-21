@@ -64,7 +64,7 @@ function whiskyFilter(p: RawProduct): boolean {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     const q = clean(String(req.query.q || ""));
-    const budget = Number(req.query.budget || 0);
+    const budget = Number(req.query.budget || 0); // 表示順の補助
     if (!q) return res.status(400).json({ error: "q is required" });
 
     const [rk, yh] = await Promise.all([searchRakuten(q), searchYahoo(q)]);
@@ -82,25 +82,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // グループごとに最安を決定（Winsorize域外は除外優先）
-    const groups = Object.entries(byKey)
-      .map(([key, arr]) => {
-        // 空配列ガード
-        if (arr.length === 0) return null;
-        
-        const eligible = arr
-          .filter(a => a.price != null)
-          .filter(a => (pmin == null || a.price! >= pmin) && (pmax == null || a.price! <= pmax));
-        const sorted = (eligible.length ? eligible : arr).sort((a,b)=>(a.price ?? 9e12) - (b.price ?? 9e12));
-        const cheapest = sorted[0] || arr[0];
-        
-        // cheapest が存在しない場合は null を返す
-        if (!cheapest) return null;
-        
-        return { key, cheapest, offers: arr };
-      })
-      .filter(Boolean); // null を除去
+    const groups = Object.entries(byKey).map(([key, arr]) => {
+      const eligible = arr
+        .filter(a => a.price != null)
+        .filter(a => (pmin == null || a.price! >= pmin) && (pmax == null || a.price! <= pmax));
+      const sorted = (eligible.length ? eligible : arr).sort((a,b)=>(a.price ?? 9e12) - (b.price ?? 9e12));
+      const cheapest = sorted[0] || arr[0];
+      return { key, cheapest, offers: arr };
+    });
 
-    // 並び順：予算に近い最安→価格昇順
+    // 並び順：予算に近い最安→価格昇順→レビューなど（今は価格のみ）
     const ranked = groups.sort((a,b) => {
       const ap = a.cheapest.price ?? 9e12, bp = b.cheapest.price ?? 9e12;
       if (budget) {
