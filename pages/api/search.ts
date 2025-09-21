@@ -1,19 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
+import type { RawProduct, GroupedResult, SearchResponse } from "@/types/search";
 import { canonicalKey, parseVolume, parseAbv } from "@/lib/normalize";
 import { winsorize } from "@/lib/price";
 import { badStore } from "@/lib/stores";
-
-type Mall = "rakuten" | "yahoo";
-type RawProduct = {
-  mall: Mall; id: string; title: string; price: number | null; url: string;
-  image: string | null; shop?: string | null; volume_ml?: number | null; abv?: number | null;
-};
-
-type GroupResult = {
-  key: string;
-  cheapest: RawProduct;
-  offers: RawProduct[];
-};
 
 const RAKUTEN_APP_ID = process.env.RAKUTEN_APP_ID!;
 const YAHOO_APP_ID = process.env.YAHOO_APP_ID!;
@@ -33,7 +22,7 @@ async function searchRakuten(q: string): Promise<RawProduct[]> {
   if (!r.ok) throw new Error(`rakuten ${r.status}`);
   const items = (await r.json()).Items?.map((w: Record<string, unknown>)=>w.Item) || [];
   return items.map((it: Record<string, unknown>)=>({
-    mall:"rakuten", id:String(it.itemCode || it.itemUrl), title: clean(it.itemName as string),
+    mall:"rakuten" as const, id:String(it.itemCode || it.itemUrl), title: clean(it.itemName as string),
     price: Number(it.itemPrice ?? null), url: it.itemUrl as string,
     image: (it.mediumImageUrls as { imageUrl: string }[])?.[0]?.imageUrl || (it.smallImageUrls as { imageUrl: string }[])?.[0]?.imageUrl || null,
     shop: it.shopName as string || null,
@@ -51,7 +40,7 @@ async function searchYahoo(q: string): Promise<RawProduct[]> {
   if (!r.ok) throw new Error(`yahoo ${r.status}`);
   const items = (await r.json()).hits || [];
   return items.map((it: Record<string, unknown>)=>({
-    mall:"yahoo", id:String(it.code || it.url), title: clean(it.name as string),
+    mall:"yahoo" as const, id:String(it.code || it.url), title: clean(it.name as string),
     price: Number(it.price ?? (it.priceLabel as { defaultPrice: number })?.defaultPrice ?? null), url: it.url as string,
     image: (it.image as { medium?: string; small?: string })?.medium || (it.image as { medium?: string; small?: string })?.small || null, 
     shop: (it.seller as { name: string })?.name || null,
@@ -68,7 +57,10 @@ function whiskyFilter(p: RawProduct): boolean {
   return true;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<SearchResponse | { error: string }>
+) {
   try {
     const q = clean(String(req.query.q || ""));
     const budget = Number(req.query.budget || 0);
@@ -86,7 +78,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       (byKey[key] ||= []).push(p);
     }
 
-    const groups: GroupResult[] = Object.entries(byKey)
+    const groups: GroupedResult[] = Object.entries(byKey)
       .map(([key, arr]) => {
         if (arr.length === 0) return null;
         
@@ -94,24 +86,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .filter(a => a.price != null)
           .filter(a => (pmin == null || a.price! >= pmin) && (pmax == null || a.price! <= pmax));
         const sorted = (eligible.length ? eligible : arr).sort((a,b)=>(a.price ?? 9e12) - (b.price ?? 9e12));
-        const cheapest = sorted[0] || arr[0];
-        
-        if (!cheapest) return null;
+        const cheapest: RawProduct | null = sorted[0] || arr[0] || null;
         
         return { key, cheapest, offers: arr };
       })
-      .filter((item): item is GroupResult => item !== null);
+      .filter((item): item is GroupedResult => item !== null);
 
-    const ranked = groups.sort((a,b) => {
-      const ap = a.cheapest.price ?? 9e12, bp = b.cheapest.price ?? 9e12;
-      if (budget) {
-        const da = Math.abs(ap - budget), db = Math.abs(bp - budget);
-        if (da !== db) return da - db;
-      }
-      return ap - bp;
-    });
+    const ranked = groups
+      .filter(g => g.cheapest !== null)
+      .sort((a,b) => {
+        const ap = a.cheapest!.price ?? 9e12, bp = b.cheapest!.price ?? 9e12;
+        if (budget) {
+          const da = Math.abs(ap - budget), db = Math.abs(bp - budget);
+          if (da !== db) return da - db;
+        }
+        return ap - bp;
+      });
 
-    res.json({ query: q, items: ranked.slice(0, 18) });
+    res.status(200).json({ query: q, items: ranked.slice(0, 18) });
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : "search_error";
     res.status(500).json({ error });

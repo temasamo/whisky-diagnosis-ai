@@ -1,35 +1,24 @@
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import WhiskyDiagnosis from "@/components/WhiskyDiagnosis";
+import type { Mall, GroupedResult, SearchResponse } from "@/types/search";
 import { WhiskyAnswers } from "@/lib/diagnosis";
 
-type Product = {
-  mall: "rakuten" | "yahoo";
-  id: string;
-  title: string;
-  price: number | null;
-  url: string;
-  image: string | null;
-};
-
-type SearchResult = {
-  key: string;
-  cheapest: Product;
-  offers: Product[];
-};
+const SHOW_DIAG = process.env.NEXT_PUBLIC_FEATURE_DIAGNOSE === "1";
 
 export default function Page() {
-  const [items, setItems] = useState<SearchResult[]>([]);
+  const [items, setItems] = useState<GroupedResult[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const out = (mall: "rakuten" | "yahoo" | "amazon", url?: string) => {
+  const out = (mall: Mall, url?: string) => {
     const u = new URL("/api/out", window.location.origin);
     u.searchParams.set("mall", mall);
     if (url) u.searchParams.set("url", url);
     window.open(u.toString(), "_blank");
   };
 
-  const buildMallSearchUrl = (mall: "rakuten" | "yahoo", title: string) =>
+  const buildMallSearchUrl = (mall: Extract<Mall, "rakuten" | "yahoo">, title: string) =>
     mall === "rakuten"
       ? `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(title)}/`
       : `https://shopping.yahoo.co.jp/search?p=${encodeURIComponent(title)}`;
@@ -38,8 +27,8 @@ export default function Page() {
     setLoading(true);
     try {
       const r = await fetch(`/api/search?q=${encodeURIComponent(q)}&budget=${answers.budget}`);
-      const j = await r.json();
-      setItems((j.items || []).filter((g: SearchResult) => g && g.cheapest));
+      const j: SearchResponse = await r.json();
+      setItems((j.items || []).filter((g: GroupedResult) => g && g.cheapest));
     } finally {
       setLoading(false);
     }
@@ -47,28 +36,33 @@ export default function Page() {
 
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-4">
-      <h1 className="text-2xl font-bold">ウイスキー診断AI</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">ウイスキー検索</h1>
+        {SHOW_DIAG && (
+          <Link href="/whisky/diagnose" className="text-sm underline">
+            診断で探す
+          </Link>
+        )}
+      </div>
       <WhiskyDiagnosis onSearch={run} />
 
       {loading && <div>検索中…</div>}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {items
-          .filter((g: SearchResult) => g && g.cheapest)
-          .map((g: SearchResult) => {
-            const c = g.cheapest;
+          .filter((g: GroupedResult) => g && g.cheapest)
+          .map((g: GroupedResult) => {
+            const c = g.cheapest!;
             return (
               <div key={g.key} className="border rounded-xl p-3 flex flex-col">
                 {c.image && (
-                  <div className="w-full h-40 mb-2 flex items-center justify-center bg-gray-50 rounded">
-                    <Image
-                      src={c.image}
-                      alt={c.title || "whisky"}
-                      width={160}
-                      height={160}
-                      className="object-contain max-w-full max-h-full"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    />
-                  </div>
+                  <Image
+                    src={c.image}
+                    alt={c.title || "whisky"}
+                    width={320}
+                    height={160}
+                    style={{ width: "100%", height: 160, objectFit: "contain" }}
+                    priority
+                  />
                 )}
 
                 <div className="text-xs text-gray-500 mb-1">
@@ -89,7 +83,7 @@ export default function Page() {
                     onClick={() =>
                       out(
                         "rakuten",
-                        g.offers?.find((o: Product) => o.mall === "rakuten")?.url ??
+                        g.offers?.find((o) => o.mall === "rakuten")?.url ??
                           buildMallSearchUrl("rakuten", c.title || "")
                       )
                     }
@@ -101,7 +95,7 @@ export default function Page() {
                     onClick={() =>
                       out(
                         "yahoo",
-                        g.offers?.find((o: Product) => o.mall === "yahoo")?.url ??
+                        g.offers?.find((o) => o.mall === "yahoo")?.url ??
                           buildMallSearchUrl("yahoo", c.title || "")
                       )
                     }

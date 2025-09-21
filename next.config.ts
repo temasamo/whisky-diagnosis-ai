@@ -11,6 +11,12 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'image.rakuten.co.jp',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'item-shopping.c.yimg.jp',
         port: '',
         pathname: '/**',
@@ -18,12 +24,6 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'shopping.c.yimg.jp',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'item-shopping.c.yimg.jp',
         port: '',
         pathname: '/**',
       },
