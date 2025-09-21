@@ -1,8 +1,25 @@
 import { useState } from "react";
+import Image from "next/image";
 import WhiskyDiagnosis from "@/components/WhiskyDiagnosis";
+import { WhiskyAnswers } from "@/lib/diagnosis";
+
+type Product = {
+  mall: "rakuten" | "yahoo";
+  id: string;
+  title: string;
+  price: number | null;
+  url: string;
+  image: string | null;
+};
+
+type SearchResult = {
+  key: string;
+  cheapest: Product;
+  offers: Product[];
+};
 
 export default function Page() {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
 
   const out = (mall: "rakuten" | "yahoo" | "amazon", url?: string) => {
@@ -17,13 +34,12 @@ export default function Page() {
       ? `https://search.rakuten.co.jp/search/mall/${encodeURIComponent(title)}/`
       : `https://shopping.yahoo.co.jp/search?p=${encodeURIComponent(title)}`;
 
-  const run = async (q: string, answers: any) => {
+  const run = async (q: string, answers: WhiskyAnswers) => {
     setLoading(true);
     try {
       const r = await fetch(`/api/search?q=${encodeURIComponent(q)}&budget=${answers.budget}`);
       const j = await r.json();
-      // 受け取り時に破棄：cheapest がないグループを落とす
-      setItems((j.items || []).filter((g: any) => g && g.cheapest));
+      setItems((j.items || []).filter((g: SearchResult) => g && g.cheapest));
     } finally {
       setLoading(false);
     }
@@ -37,18 +53,22 @@ export default function Page() {
       {loading && <div>検索中…</div>}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {items
-          // まずは cheapest が存在するものだけ描画
-          .filter((g: any) => g && g.cheapest)
-          .map((g: any) => {
-            const c = g.cheapest; // 以降は c を使う
+          .filter((g: SearchResult) => g && g.cheapest)
+          .map((g: SearchResult) => {
+            const c = g.cheapest;
             return (
               <div key={g.key} className="border rounded-xl p-3 flex flex-col">
                 {c.image && (
-                  <img
-                    src={c.image}
-                    alt={c.title || "whisky"}
-                    className="w-full h-40 object-contain mb-2"
-                  />
+                  <div className="w-full h-40 mb-2 flex items-center justify-center bg-gray-50 rounded">
+                    <Image
+                      src={c.image}
+                      alt={c.title || "whisky"}
+                      width={160}
+                      height={160}
+                      className="object-contain max-w-full max-h-full"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    />
+                  </div>
                 )}
 
                 <div className="text-xs text-gray-500 mb-1">
@@ -69,7 +89,7 @@ export default function Page() {
                     onClick={() =>
                       out(
                         "rakuten",
-                        g.offers?.find((o: any) => o.mall === "rakuten")?.url ??
+                        g.offers?.find((o: Product) => o.mall === "rakuten")?.url ??
                           buildMallSearchUrl("rakuten", c.title || "")
                       )
                     }
@@ -81,7 +101,7 @@ export default function Page() {
                     onClick={() =>
                       out(
                         "yahoo",
-                        g.offers?.find((o: any) => o.mall === "yahoo")?.url ??
+                        g.offers?.find((o: Product) => o.mall === "yahoo")?.url ??
                           buildMallSearchUrl("yahoo", c.title || "")
                       )
                     }

@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 type Mall = "rakuten" | "yahoo" | "amazon";
 
-const PROVIDER = process.env.RAKUTEN_PROVIDER || "official"; // ← デフォルトofficialに
+const PROVIDER = process.env.RAKUTEN_PROVIDER || "official";
 const MOSHIMO_A_ID = process.env.MOSHIMO_A_ID!;
 const MOSHIMO_P_ID = process.env.MOSHIMO_P_ID!;
 const MOSHIMO_PC_ID = process.env.MOSHIMO_PC_ID!;
@@ -18,26 +18,20 @@ const AMAZON_TAG = process.env.NEXT_PUBLIC_AMAZON_TAG || "";
 
 const enc = (s: string) => encodeURIComponent(s);
 
-// --- 楽天：もしも（旧） ---
 function buildRakutenMoshimo(url: string) {
   return `https://af.moshimo.com/af/c/click?a_id=${MOSHIMO_A_ID}&p_id=${MOSHIMO_P_ID}&pc_id=${MOSHIMO_PC_ID}&pl_id=${MOSHIMO_PL_ID}&url=${enc(url)}`;
 }
 
-// --- 楽天：公式（推奨） ---
-// 仕様： https://hb.afl.rakuten.co.jp/hgc/<AFFIL_ID>/?pc=<商品URL>&m=<商品URL>
-// （pc=PC用リンク、m=モバイル用。両方同じでOK）
 function buildRakutenOfficial(url: string) {
   if (!RAKUTEN_AFFIL_ID) throw new Error("RAKUTEN_AFFILIATE_ID is missing");
   const base = `https://hb.afl.rakuten.co.jp/hgc/${RAKUTEN_AFFIL_ID}/`;
   return `${base}?pc=${enc(url)}&m=${enc(url)}`;
 }
 
-// --- Yahoo：ValueCommerce ---
 function buildYahooVC(url: string) {
   return `https://ck.jp.ap.valuecommerce.com/servlet/referral?sid=${YAHOO_VC_SID}&pid=${YAHOO_VC_PID}&vc_url=${enc(url)}`;
 }
 
-// 楽天以外のURLかどうかをチェック
 function isRakutenUrl(url: string): boolean {
   try {
     const urlObj = new URL(url);
@@ -56,7 +50,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (mall === "rakuten") {
       if (!url) throw new Error("url is required for rakuten");
       
-      // 楽天以外のURLの場合は直接リダイレクト（アフィリエイトを使わない）
       if (!isRakutenUrl(url)) {
         finalUrl = url;
       } else {
@@ -75,7 +68,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     res.writeHead(302, { Location: finalUrl });
     res.end();
-  } catch (e: any) {
-    res.status(400).json({ error: e.message || "bad_request" });
+  } catch (e: unknown) {
+    const error = e instanceof Error ? e.message : "bad_request";
+    res.status(400).json({ error });
   }
 }

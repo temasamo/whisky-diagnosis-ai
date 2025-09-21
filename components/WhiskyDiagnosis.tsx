@@ -14,32 +14,32 @@ export default function WhiskyDiagnosis({ onSearch }: { onSearch: (q: string, a:
       <div className="font-semibold">ウイスキー診断（MVP）</div>
       <div className="grid md:grid-cols-3 gap-3">
         <label>地域
-          <select className="w-full border rounded px-2 py-1" value={answers.region} onChange={e=>set({region:e.target.value as any})}>
+          <select className="w-full border rounded px-2 py-1" value={answers.region} onChange={e=>set({region:e.target.value as WhiskyAnswers["region"]})}>
             {["islay","speyside","highland","japan","ireland","bourbon","rye","campbeltown","lowland","any"].map(x=><option key={x} value={x}>{x}</option>)}
           </select>
         </label>
         <label>タイプ
-          <select className="w-full border rounded px-2 py-1" value={answers.type} onChange={e=>set({type:e.target.value as any})}>
+          <select className="w-full border rounded px-2 py-1" value={answers.type} onChange={e=>set({type:e.target.value as WhiskyAnswers["type"]})}>
             {["single_malt","blended","grain","bourbon","rye","cask_strength","any"].map(x=><option key={x} value={x}>{x}</option>)}
           </select>
         </label>
         <label>ピート
-          <select className="w-full border rounded px-2 py-1" value={answers.peat} onChange={e=>set({peat:e.target.value as any})}>
+          <select className="w-full border rounded px-2 py-1" value={answers.peat} onChange={e=>set({peat:e.target.value as WhiskyAnswers["peat"]})}>
             {["none","light","medium","heavy","any"].map(x=><option key={x} value={x}>{x}</option>)}
           </select>
         </label>
         <label>年数
-          <select className="w-full border rounded px-2 py-1" value={answers.age} onChange={e=>set({age:e.target.value as any})}>
+          <select className="w-full border rounded px-2 py-1" value={answers.age} onChange={e=>set({age:e.target.value as WhiskyAnswers["age"]})}>
             {["nas","10","12","15","18","21","25","any"].map(x=><option key={x} value={x}>{x}</option>)}
           </select>
         </label>
         <label>予算
-          <select className="w-full border rounded px-2 py-1" value={answers.budget} onChange={e=>set({budget:Number(e.target.value) as any})}>
+          <select className="w-full border rounded px-2 py-1" value={answers.budget} onChange={e=>set({budget:Number(e.target.value) as WhiskyAnswers["budget"]})}>
             {[3000,5000,8000,15000,30000,60000].map(x=><option key={x} value={x}>{x}</option>)}
           </select>
         </label>
         <label>内容量
-          <select className="w-full border rounded px-2 py-1" value={answers.volume} onChange={e=>set({volume:Number(e.target.value) as any})}>
+          <select className="w-full border rounded px-2 py-1" value={answers.volume} onChange={e=>set({volume:Number(e.target.value) as WhiskyAnswers["volume"]})}>
             {[500,700,750,1000].map(x=><option key={x} value={x}>{x}</option>)}
           </select>
         </label>
