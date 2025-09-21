@@ -66,13 +66,14 @@ export default function SearchPage() {
           return (
             <div key={g.key} className="border rounded-xl p-3 flex flex-col">
               {c.image && (
-                <div className="relative w-full h-40 mb-2">
+                <div className="relative w-full h-32 mb-2 flex items-center justify-center bg-gray-50 rounded">
                   <Image
                     src={c.image}
                     alt={c.title || "whisky"}
-                    fill
+                    width={120}
+                    height={120}
+                    className="object-contain max-w-full max-h-full"
                     sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-contain"
                   />
                 </div>
               )}
