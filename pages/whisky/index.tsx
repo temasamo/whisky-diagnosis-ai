@@ -10,8 +10,8 @@ export default function WhiskyLanding() {
           3分で、あなたにぴったりの一本が見つかる。楽天・Yahoo・Amazonを横断して最安も提示。
         </p>
 
-        {/* ここがポイント：flex + flex-wrap + gap */}
-        <div className="flex flex-wrap items-center justify-center gap-3 mt-2">
+        {/* 上下に並べる：flex-col + gap */}
+        <div className="flex flex-col items-center gap-3 mt-2">
           <Link href="/whisky/diagnose" className="inline-flex items-center px-5 py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition-colors">
             診断を始める
           </Link>
