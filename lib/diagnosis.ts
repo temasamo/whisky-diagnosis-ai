@@ -7,7 +7,7 @@ export type WhiskyAnswers = {
   cask?: ("bourbon" | "sherry" | "mizunara" | "wine" | "rum" | "port" | "any")[];
   age?: "nas" | "10" | "12" | "15" | "18" | "21" | "25" | "any";
   drinking?: "straight" | "rock" | "highball" | "mizuwari" | "any";
-  budget?: 3000 | 5000 | 8000 | 15000 | 30000 | 60000;
+  budget?: 3000 | 5000 | 8000 | 10000 | 15000 | 30000 | 60000;
   volume?: 500 | 700 | 750 | 1000; // 表示用
 };
 
