@@ -14,7 +14,7 @@ export interface RawProduct {
 
 export interface GroupedResult {
   key: string;
-  cheapest: RawProduct | null;     // フロントで型ガード
+  cheapest: RawProduct;     // null を許可しない
   offers: RawProduct[];
 }
 

@@ -86,16 +86,17 @@ export default async function handler(
           .filter(a => a.price != null)
           .filter(a => (pmin == null || a.price! >= pmin) && (pmax == null || a.price! <= pmax));
         const sorted = (eligible.length ? eligible : arr).sort((a,b)=>(a.price ?? 9e12) - (b.price ?? 9e12));
-        const cheapest: RawProduct | null = sorted[0] || arr[0] || null;
+        const cheapest = sorted[0] || arr[0];
+        
+        if (!cheapest) return null;
         
         return { key, cheapest, offers: arr };
       })
       .filter((item): item is GroupedResult => item !== null);
 
     const ranked = groups
-      .filter(g => g.cheapest !== null)
       .sort((a,b) => {
-        const ap = a.cheapest!.price ?? 9e12, bp = b.cheapest!.price ?? 9e12;
+        const ap = a.cheapest.price ?? 9e12, bp = b.cheapest.price ?? 9e12;
         if (budget) {
           const da = Math.abs(ap - budget), db = Math.abs(bp - budget);
           if (da !== db) return da - db;

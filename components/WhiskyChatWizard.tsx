@@ -41,7 +41,7 @@ export default function WhiskyChatWizard(
               ["アイラ","islay"],["スペイサイド","speyside"],["ハイランド","highland"],
               ["ジャパニーズ","japan"],["こだわらない","any"]
             ].map(([label,val])=>(
-              <button key={val} onClick={()=>{setA({...a, region:val as any}); next();}}>{label}</button>
+              <button key={val} onClick={()=>{setA({...a, region:val as WhiskyAnswers['region']}); next();}}>{label}</button>
             ))}
           </div>
         </div>
@@ -64,7 +64,7 @@ export default function WhiskyChatWizard(
           <div>予算帯は？</div>
           <div style={{display:'flex', gap:8, marginTop:8, flexWrap:'wrap'}}>
             {[3000,5000,8000,15000,30000].map(v=>(
-              <button key={v} onClick={()=>{setA({...a, budget:v as any}); next();}}>
+              <button key={v} onClick={()=>{setA({...a, budget:v as WhiskyAnswers['budget']}); next();}}>
                 〜{v.toLocaleString()}円
               </button>
             ))}
@@ -77,7 +77,7 @@ export default function WhiskyChatWizard(
           <div>内容量は？</div>
           <div style={{display:'flex', gap:8, marginTop:8, flexWrap:'wrap'}}>
             {[500,700,750,1000].map(v=>(
-              <button key={v} onClick={()=>{setA({...a, volume:v as any});}}>
+              <button key={v} onClick={()=>{setA({...a, volume:v as WhiskyAnswers['volume']});}}>
                 {v}ml
               </button>
             ))}
