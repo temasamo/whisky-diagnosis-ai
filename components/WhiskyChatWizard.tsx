@@ -9,9 +9,12 @@ const initial: WhiskyAnswers = {
 };
 
 export default function WhiskyChatWizard(
-  { onSearch }: { onSearch: (q: string, a: WhiskyAnswers) => void }
+  { onSearch, initialAnswers }: { 
+    onSearch: (q: string, a: WhiskyAnswers) => void; 
+    initialAnswers?: WhiskyAnswers;
+  }
 ) {
-  const [a, setA] = useState<WhiskyAnswers>(initial);
+  const [a, setA] = useState<WhiskyAnswers>(initialAnswers ?? initial);
   const [step, setStep] = useState<Step>(0);
 
   const next = () => setStep(s => (s < 4 ? (s+1) as Step : s));
