@@ -10,8 +10,8 @@ export default function WhiskyLanding() {
           3分で、あなたにぴったりの一本が見つかる。楽天・Yahoo・Amazonを横断して最安も提示。
         </p>
 
-        {/* 上下に並べる：flex-col + gap */}
-        <div className="flex flex-col items-center gap-3 mt-2">
+        {/* 横並び3つのボタン：flex-row + gap */}
+        <div className="flex flex-row items-center justify-center gap-3 mt-2 flex-wrap">
           <Link href="/whisky/diagnose" className="inline-flex items-center px-5 py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition-colors">
             <span className="mr-2">⚫️</span>
             診断を始める
@@ -19,6 +19,10 @@ export default function WhiskyLanding() {
           <Link href="/whisky/search" className="inline-flex items-center px-5 py-3 rounded-xl border hover:bg-gray-50 transition-colors">
             <span className="mr-2">⚫️</span>
             キーワード検索へ
+          </Link>
+          <Link href="/whisky/diagnose-detailed" className="inline-flex items-center px-5 py-3 rounded-xl border hover:bg-gray-50 transition-colors">
+            <span className="mr-2">⚫️</span>
+            詳細選択診断
           </Link>
         </div>
       </section>
