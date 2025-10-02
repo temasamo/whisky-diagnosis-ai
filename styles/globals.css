@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+/* 全要素の黒枠を強制リセット（!importantで上書き） */
+* { 
+  border: none !important; 
+  outline: none !important; 
+  box-shadow: none !important;
+}
+
+/* ボタン要素の特別なリセット */
+button, input, textarea, select {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: inherit !important;
+}
+
+/* フォーカス可視は保つ（アクセシビリティ） */
+:focus-visible { 
+  outline: 2px solid #d97706 !important; 
+  outline-offset: 2px !important; 
+}

@@ -24,6 +24,11 @@ export default function WhiskyLanding() {
             <span className="mr-2">⚫️</span>
             詳細選択診断
           </Link>
+          {/* 追加：新チャットUI */}
+          <Link href="/whisky/chat" className="inline-flex items-center px-5 py-3 rounded-xl border hover:bg-gray-50 transition-colors">
+            <span className="mr-2">🥃</span>
+            チャット診断（新UI）
+          </Link>
         </div>
       </section>
 
