@@ -25,8 +25,8 @@ const questionConfigs = [
     step: 0,
     question: "こんにちは！ウイスキー診断を始めましょう。まずは、どのようなシーンでウイスキーを楽しみたいですか？",
     options: [
-      { label: "自分で飲む", value: "self", action: (a) => ({ use: "self" }) },
-      { label: "ギフト用", value: "gift", action: (a) => ({ use: "gift" }) }
+      { label: "自分で飲む", value: "self", action: (a: any) => ({ use: "self" }) },
+      { label: "ギフト用", value: "gift", action: (a: any) => ({ use: "gift" }) }
     ],
     allowCustom: true,
     customPlaceholder: "その他のシーンがあれば教えてください"
@@ -35,11 +35,11 @@ const questionConfigs = [
     step: 1,
     question: "地域の好みはありますか？アイラのスモーキーな味わいや、スペイサイドのフルーティな味わいなど、お好みの地域を教えてください。",
     options: [
-      { label: "アイラ（スモーキー）", value: "islay", action: (a) => ({ region: "islay" }) },
-      { label: "スペイサイド（フルーティ）", value: "speyside", action: (a) => ({ region: "speyside" }) },
-      { label: "ハイランド（バランス）", value: "highland", action: (a) => ({ region: "highland" }) },
-      { label: "ジャパニーズ", value: "japan", action: (a) => ({ region: "japan" }) },
-      { label: "こだわらない", value: "any", action: (a) => ({ region: "any" }) }
+      { label: "アイラ（スモーキー）", value: "islay", action: (a: any) => ({ region: "islay" }) },
+      { label: "スペイサイド（フルーティ）", value: "speyside", action: (a: any) => ({ region: "speyside" }) },
+      { label: "ハイランド（バランス）", value: "highland", action: (a: any) => ({ region: "highland" }) },
+      { label: "ジャパニーズ", value: "japan", action: (a: any) => ({ region: "japan" }) },
+      { label: "こだわらない", value: "any", action: (a: any) => ({ region: "any" }) }
     ],
     allowCustom: true,
     customPlaceholder: "その他の地域や特定の蒸留所があれば教えてください"
@@ -48,10 +48,10 @@ const questionConfigs = [
     step: 2,
     question: "味わいの方向性はいかがですか？ピート（スモーキー）の強さについて教えてください。",
     options: [
-      { label: "ノンピート（スモーキーなし）", value: "none", action: (a) => ({ peat: "none" }) },
-      { label: "ピート控えめ", value: "light", action: (a) => ({ peat: "light" }) },
-      { label: "ほどよくピート", value: "medium", action: (a) => ({ peat: "medium" }) },
-      { label: "しっかりスモーキー", value: "heavy", action: (a) => ({ peat: "heavy" }) }
+      { label: "ノンピート（スモーキーなし）", value: "none", action: (a: any) => ({ peat: "none" }) },
+      { label: "ピート控えめ", value: "light", action: (a: any) => ({ peat: "light" }) },
+      { label: "ほどよくピート", value: "medium", action: (a: any) => ({ peat: "medium" }) },
+      { label: "しっかりスモーキー", value: "heavy", action: (a: any) => ({ peat: "heavy" }) }
     ],
     allowCustom: true,
     customPlaceholder: "その他の味わいの好みがあれば教えてください"
@@ -60,11 +60,11 @@ const questionConfigs = [
     step: 3,
     question: "予算帯はいかがですか？お手頃なものから高級なものまで、ご希望の価格帯を教えてください。",
     options: [
-      { label: "〜3,000円", value: 3000, action: (a) => ({ budget: 3000 }) },
-      { label: "〜5,000円", value: 5000, action: (a) => ({ budget: 5000 }) },
-      { label: "〜8,000円", value: 8000, action: (a) => ({ budget: 8000 }) },
-      { label: "〜15,000円", value: 15000, action: (a) => ({ budget: 15000 }) },
-      { label: "〜30,000円", value: 30000, action: (a) => ({ budget: 30000 }) }
+      { label: "〜3,000円", value: 3000, action: (a: any) => ({ budget: 3000 }) },
+      { label: "〜5,000円", value: 5000, action: (a: any) => ({ budget: 5000 }) },
+      { label: "〜8,000円", value: 8000, action: (a: any) => ({ budget: 8000 }) },
+      { label: "〜15,000円", value: 15000, action: (a: any) => ({ budget: 15000 }) },
+      { label: "〜30,000円", value: 30000, action: (a: any) => ({ budget: 30000 }) }
     ],
     allowCustom: true,
     customPlaceholder: "その他の予算があれば教えてください"
@@ -73,10 +73,10 @@ const questionConfigs = [
     step: 4,
     question: "最後に、内容量はいかがですか？",
     options: [
-      { label: "500ml", value: 500, action: (a) => ({ volume: 500 }) },
-      { label: "700ml（標準）", value: 700, action: (a) => ({ volume: 700 }) },
-      { label: "750ml", value: 750, action: (a) => ({ volume: 750 }) },
-      { label: "1000ml", value: 1000, action: (a) => ({ volume: 1000 }) }
+      { label: "500ml", value: 500, action: (a: any) => ({ volume: 500 }) },
+      { label: "700ml（標準）", value: 700, action: (a: any) => ({ volume: 700 }) },
+      { label: "750ml", value: 750, action: (a: any) => ({ volume: 750 }) },
+      { label: "1000ml", value: 1000, action: (a: any) => ({ volume: 1000 }) }
     ],
     allowCustom: true,
     customPlaceholder: "その他の内容量があれば教えてください"
