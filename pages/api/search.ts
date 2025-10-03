@@ -11,31 +11,66 @@ const NO_FILTER = process.env.NO_FILTER === "1";
 
 const clean = (s?: string | null) => (s || "").replace(/\s+/g, " ").trim();
 
-// 検索語を最適化（具体的すぎる検索語を簡素化）
+// 検索語を最適化（診断結果に基づいた検索クエリを生成）
 function optimizeQuery(q: string): string {
   let optimized = q.toLowerCase();
   
-  // 日本語の地域名を英語に変換
+  // 地域名を英語に変換（検索精度向上）
   optimized = optimized.replace(/スペイサイド/g, 'speyside');
   optimized = optimized.replace(/アイラ/g, 'islay');
   optimized = optimized.replace(/ハイランド/g, 'highland');
+  optimized = optimized.replace(/ローランド/g, 'lowland');
+  optimized = optimized.replace(/キャンベルタウン/g, 'campbeltown');
   optimized = optimized.replace(/ジャパニーズ/g, 'japanese');
   
-  // 冗長な語句を削除・簡素化
-  optimized = optimized.replace(/ピート控えめ/g, '');
-  optimized = optimized.replace(/ピート/g, '');
-  optimized = optimized.replace(/シングルモルト/g, 'single malt');
-  optimized = optimized.replace(/ウイスキー/g, 'whisky');
+  // ピート関連のキーワードを保持
+  optimized = optimized.replace(/ピート控えめ/g, 'light peat');
+  optimized = optimized.replace(/ピート/g, 'peat');
+  optimized = optimized.replace(/ノンピート/g, 'no peat');
+  optimized = optimized.replace(/スモーキー/g, 'smoky');
   
-  // 容量情報を削除（検索を広げるため）
+  // 味わいのキーワードを保持
+  optimized = optimized.replace(/フルーティ/g, 'fruity');
+  optimized = optimized.replace(/バランス/g, 'balanced');
+  
+  // 用途と価格帯を削除（検索を広げるため）
+  optimized = optimized.replace(/自分で飲む/g, '');
+  optimized = optimized.replace(/ギフト/g, '');
+  optimized = optimized.replace(/プレゼント/g, '');
+  optimized = optimized.replace(/〜\d+円/g, '');
   optimized = optimized.replace(/\d+ml/g, '');
+  optimized = optimized.replace(/（標準）/g, '');
+  optimized = optimized.replace(/（フルーティ）/g, '');
+  optimized = optimized.replace(/（スモーキー）/g, '');
+  optimized = optimized.replace(/（バランス）/g, '');
   
   // 余分な空白を整理
   optimized = optimized.replace(/\s+/g, ' ').trim();
   
+  // ウイスキーキーワードを追加
+  if (!optimized.includes('whisky') && !optimized.includes('ウイスキー')) {
+    optimized = `whisky ${optimized}`;
+  }
+  
   // 空になった場合は基本的な検索語にフォールバック
   if (!optimized || optimized.length < 3) {
-    optimized = 'whisky';
+    return 'whisky';
+  }
+  
+  // 検索クエリが複雑すぎる場合は、主要なキーワードのみに絞る
+  const keywords = optimized.split(' ').filter(word => 
+    word.length > 2 && 
+    !word.includes('（') && 
+    !word.includes('）') &&
+    !word.includes('〜') &&
+    !word.includes('円') &&
+    !word.includes('なし') &&
+    !word.includes('控えめ')
+  );
+  
+  // 最大2つのキーワードに絞る（シンプルに）
+  if (keywords.length > 2) {
+    return keywords.slice(0, 2).join(' ');
   }
   
   return optimized;
@@ -132,10 +167,29 @@ export default async function handler(
     if (!q) return res.status(400).json({ error: "q is required" });
 
     console.log(`Original query: ${q}`);
-    console.log(`Optimized query: ${optimizeQuery(q)}`);
+    
+    // 診断結果に基づいた検索クエリを生成
+    const searchQuery = optimizeQuery(q);
+    console.log(`Optimized query: ${searchQuery}`);
 
-    const [rk, yh] = await Promise.all([searchRakuten(q), searchYahoo(q)]);
-    console.log(`Rakuten results: ${rk.length}, Yahoo results: ${yh.length}`);
+    // Yahoo API障害対応: 楽天APIのみで動作
+    let rk: RawProduct[] = [];
+    let yh: RawProduct[] = [];
+    
+    try {
+      rk = await searchRakuten(searchQuery);
+      console.log(`Rakuten results: ${rk.length}`);
+    } catch (error) {
+      console.error('Rakuten API error:', error);
+    }
+    
+    try {
+      yh = await searchYahoo(searchQuery);
+      console.log(`Yahoo results: ${yh.length}`);
+    } catch (error) {
+      console.error('Yahoo API error (可能な障害):', error);
+      // Yahoo API障害時は楽天のみで継続
+    }
     
     const merged = [...rk, ...yh].filter(whiskyFilter);
     console.log(`After filtering: ${merged.length}`);

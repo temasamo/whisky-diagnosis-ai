@@ -40,7 +40,7 @@ export default function WhiskyDiagnosis({ onSearch }: { onSearch: (q: string, a:
         </label>
         <label>内容量
           <select className="w-full border rounded px-2 py-1" value={answers.volume} onChange={e=>set({volume:Number(e.target.value) as WhiskyAnswers["volume"]})}>
-            {[500,700,750,1000].map(x=><option key={x} value={x}>{x}</option>)}
+            {[180,500,700,1000].map(x=><option key={x} value={x}>{x}</option>)}
           </select>
         </label>
       </div>

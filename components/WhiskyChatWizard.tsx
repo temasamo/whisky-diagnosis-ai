@@ -73,10 +73,10 @@ const questionConfigs = [
     step: 4,
     question: "最後に、内容量はいかがですか？",
     options: [
+      { label: "180ml", value: 180, action: (a: any) => ({ volume: 180 }) },
       { label: "500ml", value: 500, action: (a: any) => ({ volume: 500 }) },
       { label: "700ml（標準）", value: 700, action: (a: any) => ({ volume: 700 }) },
-      { label: "750ml", value: 750, action: (a: any) => ({ volume: 750 }) },
-      { label: "1000ml", value: 1000, action: (a: any) => ({ volume: 1000 }) }
+      { label: "1000ml以上", value: 1000, action: (a: any) => ({ volume: 1000 }) }
     ],
     allowCustom: true,
     customPlaceholder: "その他の内容量があれば教えてください"

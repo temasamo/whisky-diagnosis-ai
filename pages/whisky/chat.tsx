@@ -26,7 +26,7 @@ const QUESTIONS = [
   {
     id: "volume",
     text: "最後に、内容量はいかがですか？",
-    options: ["500ml", "700ml（標準）", "750ml", "1000ml"]
+    options: ["180ml", "500ml", "700ml（標準）", "1000ml以上"]
   }
 ];
 
@@ -125,14 +125,14 @@ export default function WhiskyChat() {
       
       const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&budget=5000`);
       const data = await response.json();
-      setResults(data.results || []);
+      setResults(data.items || []);
       setShowSearchButton(false);
       
       // 検索結果のメッセージを追加
-      if (data.results && data.results.length > 0) {
+      if (data.items && data.items.length > 0) {
         addMessage({
           role: "ai",
-          text: `検索結果：${data.results.length}件のウイスキーが見つかりました！`
+          text: `検索結果：${data.items.length}件のウイスキーが見つかりました！`
         });
       } else {
         addMessage({

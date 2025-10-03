@@ -7,7 +7,7 @@ export type WhiskyAnswers = {
   age?: "nas" | "10" | "12" | "15" | "18" | "21" | "25" | "any";
   drinking?: "straight" | "rock" | "highball" | "mizuwari" | "any";
   budget?: 3000 | 5000 | 8000 | 10000 | 15000 | 30000 | 60000;
-  volume?: 500 | 700 | 750 | 1000;
+  volume?: 180 | 500 | 700 | 1000;
 };
 
 export function buildQueryFromAnswers(a: WhiskyAnswers): string {
