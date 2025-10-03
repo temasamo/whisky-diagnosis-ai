@@ -10,12 +10,20 @@ export default function Home() {
         <p className="text-gray-600 mb-8">
           あなたにぴったりのウイスキーを見つけましょう
         </p>
-        <Link 
-          href="/whisky"
-          className="inline-block bg-black text-white px-8 py-3 rounded-lg hover:bg-gray-800 transition-colors"
-        >
-          ウイスキー検索を始める
-        </Link>
+        <div className="space-y-4">
+          <Link 
+            href="/whisky"
+            className="inline-block bg-black text-white px-8 py-3 rounded-lg hover:bg-gray-800 transition-colors w-full"
+          >
+            ウイスキー検索を始める
+          </Link>
+          <Link 
+            href="/rag/admin"
+            className="inline-block bg-amber-600 text-white px-8 py-3 rounded-lg hover:bg-amber-700 transition-colors w-full"
+          >
+            RAG知識ベース管理
+          </Link>
+        </div>
       </div>
     </div>
   );

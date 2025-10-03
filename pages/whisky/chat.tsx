@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { integrateRAGWithDiagnosis } from "../../lib/rag-integration";
 
 // 質問フロー
 const QUESTIONS = [
@@ -12,6 +13,11 @@ const QUESTIONS = [
     id: "region", 
     text: "地域の好みはありますか？アイラのスモーキーな味わいや、スペイサイドのフルーティな味わいなど、お好みの地域を教えてください。",
     options: ["アイラ（スモーキー）", "スペイサイド（フルーティ）", "ハイランド（バランス）", "ジャパニーズ", "こだわらない"]
+  },
+  {
+    id: "japanese_detail",
+    text: "日本ウイスキーについて詳しく教えてください。どちらのメーカーに興味がありますか？",
+    options: ["サントリーウイスキーについて詳しく聞きたい", "ニッカウイスキーについて詳しく聞きたい", "両方聞きたい", "次に進む"]
   },
   {
     id: "peat",
@@ -58,6 +64,7 @@ export default function WhiskyChat() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
   const [showSearchButton, setShowSearchButton] = useState(false);
+  const [ragInsights, setRagInsights] = useState<any>(null);
   const chatRef = useRef<HTMLDivElement>(null);
 
   // 初期化（クライアントサイドのみ）
@@ -84,6 +91,73 @@ export default function WhiskyChat() {
     setMessages(prev => [...prev, newMessage]);
   };
 
+  // RAG知識を表示する関数
+  const showRAGInsights = async (option: string) => {
+    try {
+      let searchQuery = "";
+      let brandFilter = "";
+
+      if (option.includes("サントリー")) {
+        searchQuery = "サントリー";
+        brandFilter = "サントリー";
+      } else if (option.includes("ニッカ")) {
+        searchQuery = "ニッカ";
+        brandFilter = "ニッカ";
+      } else if (option === "両方聞きたい") {
+        searchQuery = "ジャパニーズ";
+        brandFilter = "両方";
+      }
+
+      const response = await fetch(`/api/rag/search?q=${encodeURIComponent(searchQuery)}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      const ragData = await response.json();
+      console.log('RAG API Response:', ragData); // デバッグ用
+      
+      if (ragData.results && ragData.results.length > 0) {
+        // ブランドでフィルタリング
+        const filteredResults = ragData.results.filter((item: any) => {
+          if (brandFilter === "両方") return true;
+          return item.brand === brandFilter;
+        });
+
+        console.log('Filtered results:', filteredResults); // デバッグ用
+        
+        if (filteredResults.length > 0) {
+          // M氏の見解を表示
+          const expertInsights = filteredResults.slice(0, 3).map((whisky: any) => {
+            const tasteText = whisky.characteristics.taste ? whisky.characteristics.taste.join('、') : '特徴的な';
+            const smokinessText = whisky.characteristics.smokiness === 'none' ? 'スモーキーさはありません' : 'スモーキーさがあります';
+            return `「${whisky.brand} ${whisky.name}」は${tasteText}な味わいで、${smokinessText}。${whisky.description}`;
+          });
+
+          addMessage({
+            role: "ai",
+            text: `🎓 当社M氏の見解をお伝えします：\n\n${expertInsights.join('\n\n')}\n\n続けて診断を進めますか？`
+          });
+        } else {
+          addMessage({
+            role: "ai",
+            text: "申し訳ございません。該当する専門知識が見つかりませんでした。続けて診断を進めますか？"
+          });
+        }
+      } else {
+        addMessage({
+          role: "ai",
+          text: "申し訳ございません。専門知識の取得に失敗しました。続けて診断を進めますか？"
+        });
+      }
+    } catch (error) {
+      console.error("RAG insights error:", error);
+      addMessage({
+        role: "ai",
+        text: "申し訳ございません。専門知識の取得に失敗しました。続けて診断を進めますか？"
+      });
+    }
+  };
+
   const handleOptionClick = async (option: string) => {
     // ユーザーの選択を追加
     addMessage({
@@ -93,7 +167,44 @@ export default function WhiskyChat() {
 
     setIsTyping(true);
 
-    // 次の質問を表示
+    // ジャパニーズ選択時の特別処理
+    if (option === "ジャパニーズ") {
+      setTimeout(() => {
+        const japaneseDetailQuestion = QUESTIONS.find(q => q.id === "japanese_detail");
+        if (japaneseDetailQuestion) {
+          addMessage({
+            role: "ai",
+            text: japaneseDetailQuestion.text,
+            options: japaneseDetailQuestion.options
+          });
+          setCurrentQuestionIndex(QUESTIONS.findIndex(q => q.id === "japanese_detail"));
+        }
+        setIsTyping(false);
+      }, 1000);
+      return;
+    }
+
+    // 日本ウイスキー詳細選択時のRAG知識表示
+    if (option.includes("サントリー") || option.includes("ニッカ") || option === "両方聞きたい") {
+      setTimeout(async () => {
+        await showRAGInsights(option);
+        // ピートの質問に進む
+        setTimeout(() => {
+          const peatQuestion = QUESTIONS.find(q => q.id === "peat");
+          if (peatQuestion) {
+            addMessage({
+              role: "ai",
+              text: peatQuestion.text,
+              options: peatQuestion.options
+            });
+            setCurrentQuestionIndex(QUESTIONS.findIndex(q => q.id === "peat"));
+          }
+        }, 2000);
+      }, 1000);
+      return;
+    }
+
+    // 通常の質問フロー
     setTimeout(() => {
       const nextIndex = currentQuestionIndex + 1;
       if (nextIndex < QUESTIONS.length) {
@@ -123,6 +234,31 @@ export default function WhiskyChat() {
         .map(m => m.text)
         .join(" ");
       
+      // 診断結果を構築
+      const diagnosisResult = {
+        scene: messages.find(m => m.role === "user" && QUESTIONS[0].options.includes(m.text))?.text,
+        region: messages.find(m => m.role === "user" && QUESTIONS[1].options.includes(m.text))?.text,
+        peat: messages.find(m => m.role === "user" && QUESTIONS[2].options.includes(m.text))?.text,
+        budget: messages.find(m => m.role === "user" && QUESTIONS[3].options.includes(m.text))?.text,
+        volume: messages.find(m => m.role === "user" && QUESTIONS[4].options.includes(m.text))?.text,
+      };
+
+      // RAG知識を統合
+      try {
+        const ragResponse = await fetch('/api/rag/insights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ diagnosisResult }),
+        });
+        const ragData = await ragResponse.json();
+        if (ragData.success) {
+          setRagInsights(ragData.data);
+        }
+      } catch (ragError) {
+        console.error("RAG insights error:", ragError);
+      }
+
+      // 商品検索
       const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&budget=5000`);
       const data = await response.json();
       setResults(data.items || []);
@@ -302,6 +438,40 @@ export default function WhiskyChat() {
                 >
                   🥃 ウイスキーを検索する
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* RAG専門家の見解 */}
+          {ragInsights && ragInsights.expertRecommendations.primary.length > 0 && (
+            <div className="mt-4 px-3">
+              <div className="bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl p-4 border border-amber-200 shadow-sm">
+                <h3 className="text-lg font-medium text-amber-900 mb-4 text-center">🎓 専門家の見解</h3>
+                <div className="space-y-3">
+                  {ragInsights.expertRecommendations.primary.map((insight: any, index: number) => (
+                    <div key={insight.id} className="bg-white rounded-lg p-4 border border-amber-200 shadow-sm">
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                            <span className="text-amber-600 font-bold text-sm">{insight.source.name}</span>
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 mb-1">{insight.whiskyName}</h4>
+                          <p className="text-sm text-gray-700 leading-relaxed">{insight.insight}</p>
+                          <div className="mt-2 flex items-center space-x-2 text-xs text-gray-500">
+                            <span>信頼度: {(insight.confidence * 100).toFixed(0)}%</span>
+                            <span>•</span>
+                            <span>{insight.source.name}の見解</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 text-center">
+                  <p className="text-sm text-amber-700">{ragInsights.summary}</p>
+                </div>
               </div>
             </div>
           )}
