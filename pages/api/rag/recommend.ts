@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { ragDatabase } from '../../lib/rag-database';
+import { ragDatabase } from '../../../lib/rag-database';
 
 export default async function handler(
   req: NextApiRequest,
