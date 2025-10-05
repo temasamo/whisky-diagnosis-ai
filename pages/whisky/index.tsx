@@ -1,8 +1,52 @@
 import Link from "next/link";
+import useSWR from "swr";
+import WhiskyNewsCard from "@/components/WhiskyNewsCard";
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+function WeeklyWhiskyNews() {
+  const { data, error, isLoading } = useSWR<{ items: any[]; count: number }>(
+    "/api/whisky/news/weekly",
+    fetcher,
+    { refreshInterval: 0, revalidateOnFocus: false }
+  );
+
+  if (error) return <div className="text-sm text-red-500">読み込みに失敗しました</div>;
+  if (isLoading) return <div className="text-sm text-gray-500">読み込み中…</div>;
+
+  const items = data?.items ?? [];
+  if (!items.length) {
+    return (
+      <div className="text-sm text-gray-500">
+        今週のニュースはまだありません
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {items.slice(0, 8).map((it) => (
+        <WhiskyNewsCard
+          key={it.id}
+          title={it.title}
+          link={it.link}
+          source={it.source}
+          pubDate={it.pub_date}
+          image={it.image_url}
+          brand={it.brand_hint}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function WhiskyLanding() {
   return (
-    <main className="max-w-5xl mx-auto p-6 space-y-10">
+    <div className="max-w-7xl mx-auto p-6">
+      {/* 2カラムレイアウト */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* 左カラム：既存コンテンツ */}
+        <main className="space-y-10">
       {/* Hero */}
       <section className="text-center space-y-4">
         <h1 className="text-3xl md:text-5xl font-extrabold">ウイスキー診断</h1>
@@ -108,6 +152,19 @@ export default function WhiskyLanding() {
         </div>
         <div>※本サイトは各モールのアフィリエイトプログラムを利用しています。</div>
       </footer>
-    </main>
+        </main>
+
+        {/* 右カラム：今週の新着ウイスキー */}
+        <aside className="space-y-6">
+          <div className="sticky top-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold">今週の新着ウイスキー</h2>
+              <a href="/whisky/news/weekly" className="text-sm text-blue-600 hover:underline">もっと見る →</a>
+            </div>
+            <WeeklyWhiskyNews />
+          </div>
+        </aside>
+      </div>
+    </div>
   );
 }
