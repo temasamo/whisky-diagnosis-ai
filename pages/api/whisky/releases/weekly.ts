@@ -26,12 +26,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   // ?market=ALL | JP | UK ...（指定なければ ALL）
   const market = (req.query.market as string)?.toUpperCase() || "ALL";
 
-  let q = supa.from("releases_view_today").select("*");
+  let q = supa.from("releases").select(`
+    *,
+    expressions!inner(
+      id,
+      name,
+      brands!inner(
+        id,
+        name
+      )
+    )
+  `);
   if (market !== "ALL") q = q.eq("market", market);
   
-  // 今週の範囲でフィルタ
-  q = q.or(`announced_date.gte.${startDate},on_sale_date.gte.${startDate}`)
-       .or(`announced_date.lte.${endDate},on_sale_date.lte.${endDate}`);
+  // 今週の範囲でフィルタ（announced_date または on_sale_date が今週の範囲内）
+  q = q.or(`and(announced_date.gte.${startDate},announced_date.lte.${endDate}),and(on_sale_date.gte.${startDate},on_sale_date.lte.${endDate})`);
   
   // limit クエリ対応
   const limit = parseInt(req.query.limit as string) || 50;
@@ -49,7 +58,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const fmt = (m: number | null, c: string | null) =>
     m && c ? new Intl.NumberFormat("ja-JP", { style: "currency", currency: c }).format(m / 100) : null;
 
-  const items = (data ?? []).map((r: any) => ({ ...r, price_display: fmt(r.price_minor, r.currency) }));
+  // データを整形（expressions と brands の情報を統合）
+  const items = (data ?? []).map((r: any) => ({
+    id: r.id,
+    brand: r.expressions?.brands?.name || 'Unknown',
+    expression: r.expressions?.name || 'Unknown',
+    source_type: r.source_type,
+    announced_date: r.announced_date,
+    on_sale_date: r.on_sale_date,
+    market: r.market,
+    retailer: r.retailer,
+    source_org: r.source_org,
+    source_url: r.source_url,
+    price_minor: r.price_minor,
+    currency: r.currency,
+    stock_status: r.stock_status,
+    created_at: r.created_at,
+    price_display: fmt(r.price_minor, r.currency)
+  }));
   res.status(200).json({ 
     items, 
     market,
