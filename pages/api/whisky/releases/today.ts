@@ -11,17 +11,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const supa = createClient(SUPA_URL, SUPA_KEY);
 
   // ?market=ALL | JP | UK ...（指定なければ ALL）
-  const market = (req.query.market as string)?.toUpperCase() || "ALL";
+  const market = (req.query?.market as string)?.toUpperCase() || "ALL";
 
-  let q = supa.from("releases_view_today").select("*");
+  const today = new Date().toISOString().slice(0, 10);
+  
+  // ビューの代わりに直接JOINクエリを使用
+  let q = supa
+    .from("releases")
+    .select(`
+      *,
+      expressions!inner(
+        id,
+        name,
+        brand_id,
+        brands!inner(
+          id,
+          name,
+          region
+        )
+      )
+    `)
+    .or(`announced_date.eq.${today},on_sale_date.eq.${today}`);
+  
   if (market !== "ALL") q = q.eq("market", market);
   
   // limit クエリ対応
-  const limit = parseInt(req.query.limit as string) || 50;
+  const limit = parseInt(req.query?.limit as string) || 50;
   q = q.limit(limit);
 
   const { data, error } = await q
-    .order("source_type", { ascending: true })
     .order("on_sale_date", { ascending: false, nullsFirst: false })
     .order("announced_date", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
@@ -32,6 +50,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const fmt = (m: number | null, c: string | null) =>
     m && c ? new Intl.NumberFormat("ja-JP", { style: "currency", currency: c }).format(m / 100) : null;
 
-  const items = (data ?? []).map((r: any) => ({ ...r, price_display: fmt(r.price_minor, r.currency) }));
+  const items = (data ?? []).map((r: any) => ({ 
+    ...r, 
+    price_display: fmt(r.price_minor, r.currency),
+    expression_name: r.expressions?.name,
+    brand_name: r.expressions?.brands?.name,
+    brand_region: r.expressions?.brands?.region
+  }));
   res.status(200).json({ items, market });
 }

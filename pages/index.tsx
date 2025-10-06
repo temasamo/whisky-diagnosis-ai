@@ -63,8 +63,8 @@ export default function Home() {
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {items.map((x, i) => (
             <article key={i} className="rounded-xl border p-3">
-              <div className="text-sm text-gray-500">{x.brand} / {x.market ?? "Global"}</div>
-              <div className="font-medium">{x.expression}</div>
+              <div className="text-sm text-gray-500">{x.brand_name} / {x.market ?? "Global"}</div>
+              <div className="font-medium">{x.expression_name}</div>
               <div className="text-xs text-gray-500 mt-1">
                 {x.announced_date ? `公式発表: ${x.announced_date}` :
                  x.on_sale_date ? `販売開始: ${x.on_sale_date}` : ""}
@@ -97,8 +97,8 @@ export default function Home() {
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           {weeklyItems.map((x, i) => (
             <article key={i} className="rounded-xl border p-3">
-              <div className="text-sm text-gray-500">{x.brand} / {x.market ?? "Global"}</div>
-              <div className="font-medium">{x.expression}</div>
+              <div className="text-sm text-gray-500">{x.brand_name} / {x.market ?? "Global"}</div>
+              <div className="font-medium">{x.expression_name}</div>
               <div className="text-xs text-gray-500 mt-1">
                 {x.announced_date ? `公式発表: ${x.announced_date}` :
                  x.on_sale_date ? `販売開始: ${x.on_sale_date}` : ""}
