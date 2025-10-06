@@ -6,34 +6,33 @@ const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supa = createClient(url, key);
 
 export default async function handler(_req: NextApiRequest, res: NextApiResponse) {
-  // 今週の日付範囲を計算
+  // 過去7日間の日付範囲を計算（今日から過去7日間）
   const today = new Date();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay()); // 日曜日
-  startOfWeek.setHours(0, 0, 0, 0);
+  const endDate = new Date(today);
+  endDate.setHours(23, 59, 59, 999);
   
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6); // 土曜日
-  endOfWeek.setHours(23, 59, 59, 999);
+  const startDate = new Date(today);
+  startDate.setDate(today.getDate() - 6); // 今日から6日前 = 過去7日間
+  startDate.setHours(0, 0, 0, 0);
 
-  const startDate = startOfWeek.toISOString().slice(0, 10);
-  const endDate = endOfWeek.toISOString().slice(0, 10);
+  const startDateStr = startDate.toISOString().slice(0, 10);
+  const endDateStr = endDate.toISOString().slice(0, 10);
 
-  // 今週の範囲でカウント
+  // 過去7日間の範囲でカウント
   const { count: c1 } = await supa
     .from("releases")
     .select("*", { count: "exact", head: true })
-    .gte("announced_date", startDate)
-    .lte("announced_date", endDate);
+    .gte("announced_date", startDateStr)
+    .lte("announced_date", endDateStr);
     
   const { count: c2 } = await supa
     .from("releases")
     .select("*", { count: "exact", head: true })
-    .gte("on_sale_date", startDate)
-    .lte("on_sale_date", endDate);
+    .gte("on_sale_date", startDateStr)
+    .lte("on_sale_date", endDateStr);
 
   res.status(200).json({ 
     weeklyCount: (c1 ?? 0) + (c2 ?? 0),
-    weekRange: { start: startDate, end: endDate }
+    weekRange: { start: startDateStr, end: endDateStr }
   });
 }

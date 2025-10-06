@@ -10,18 +10,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const supa = createClient(SUPA_URL, SUPA_KEY);
 
-  // 今週の日付範囲を計算
+  // 過去7日間の日付範囲を計算（今日から過去7日間）
   const today = new Date();
-  const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay()); // 日曜日
-  startOfWeek.setHours(0, 0, 0, 0);
+  const endDate = new Date(today);
+  endDate.setHours(23, 59, 59, 999);
   
-  const endOfWeek = new Date(startOfWeek);
-  endOfWeek.setDate(startOfWeek.getDate() + 6); // 土曜日
-  endOfWeek.setHours(23, 59, 59, 999);
+  const startDate = new Date(today);
+  startDate.setDate(today.getDate() - 6); // 今日から6日前 = 過去7日間
+  startDate.setHours(0, 0, 0, 0);
 
-  const startDate = startOfWeek.toISOString().slice(0, 10);
-  const endDate = endOfWeek.toISOString().slice(0, 10);
+  const startDateStr = startDate.toISOString().slice(0, 10);
+  const endDateStr = endDate.toISOString().slice(0, 10);
 
   // ?market=ALL | JP | UK ...（指定なければ ALL）
   const market = (req.query.market as string)?.toUpperCase() || "ALL";
@@ -39,8 +38,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   `);
   if (market !== "ALL") q = q.eq("market", market);
   
-  // 今週の範囲でフィルタ（announced_date または on_sale_date が今週の範囲内）
-  q = q.or(`and(announced_date.gte.${startDate},announced_date.lte.${endDate}),and(on_sale_date.gte.${startDate},on_sale_date.lte.${endDate})`);
+  // 過去7日間の範囲でフィルタ（announced_date または on_sale_date が過去7日間の範囲内）
+  q = q.or(`and(announced_date.gte.${startDateStr},announced_date.lte.${endDateStr}),and(on_sale_date.gte.${startDateStr},on_sale_date.lte.${endDateStr})`);
   
   // limit クエリ対応
   const limit = parseInt(req.query.limit as string) || 50;
@@ -79,6 +78,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.status(200).json({ 
     items, 
     market,
-    weekRange: { start: startDate, end: endDate }
+    weekRange: { start: startDateStr, end: endDateStr }
   });
 }
