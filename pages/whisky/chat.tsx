@@ -184,8 +184,9 @@ export default function WhiskyChat() {
       return;
     }
 
-    // 日本ウイスキー詳細選択時のRAG知識表示
-    if (option.includes("サントリー") || option.includes("ニッカ") || option === "両方聞きたい") {
+    // 日本ウイスキー詳細選択時のRAG知識表示（ジャパニーズ選択時のみ）
+    if ((option.includes("サントリー") || option.includes("ニッカ") || option === "両方聞きたい") && 
+        messages.some(m => m.role === "user" && m.text === "ジャパニーズ")) {
       setTimeout(async () => {
         await showRAGInsights(option);
         // ピートの質問に進む
@@ -209,6 +210,23 @@ export default function WhiskyChat() {
       const nextIndex = currentQuestionIndex + 1;
       if (nextIndex < QUESTIONS.length) {
         const nextQuestion = QUESTIONS[nextIndex];
+        
+        // ジャパニーズ詳細質問をスキップ（ジャパニーズ選択時以外）
+        if (nextQuestion.id === "japanese_detail" && !messages.some(m => m.role === "user" && m.text === "ジャパニーズ")) {
+          const skipIndex = nextIndex + 1;
+          if (skipIndex < QUESTIONS.length) {
+            const skipQuestion = QUESTIONS[skipIndex];
+            addMessage({
+              role: "ai",
+              text: skipQuestion.text,
+              options: skipQuestion.options
+            });
+            setCurrentQuestionIndex(skipIndex);
+          }
+          setIsTyping(false);
+          return;
+        }
+        
         addMessage({
           role: "ai",
           text: nextQuestion.text,
