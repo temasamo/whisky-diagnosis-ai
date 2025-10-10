@@ -14,6 +14,7 @@ export interface ReleaseItem {
   brand: string;
   expression: string;
   announced_date: string | null;
+  on_sale_date?: string | null;
   source_type: "press";
   source_url: string;
   market: string;
@@ -121,8 +122,6 @@ const NON_WHISKY_KEYWORDS = [
   /functional drink/i,
   /RTD/i,
   /ready to drink/i,
-  /缶/i,
-  /can/i,
   /ボトル/i,
   /bottle/i,
   /パック/i,
@@ -322,6 +321,54 @@ export function extractExpression(title: string, brand: string): string {
   return expression;
 }
 
+// 全角数字を半角数字に変換
+function convertFullWidthToHalfWidth(str: string): string {
+  return str.replace(/[０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+}
+
+// 発売日を抽出
+export function extractReleaseDate(title: string, content?: string): string | null {
+  const text = (title + ' ' + (content || '')).toLowerCase();
+  
+  // 年月日のパターンを検索
+  const datePatterns = [
+    // 2025年12月2日
+    /(\d{4})年(\d{1,2})月(\d{1,2})日/,
+    // 12月2日
+    /(\d{1,2})月(\d{1,2})日/,
+    // １２月２日（全角数字）
+    /([０-９]{1,2})月([０-９]{1,2})日/,
+  ];
+  
+  for (const pattern of datePatterns) {
+    const match = text.match(pattern);
+    if (match) {
+      let year = new Date().getFullYear();
+      let month = parseInt(convertFullWidthToHalfWidth(match[1]));
+      let day = parseInt(convertFullWidthToHalfWidth(match[2]));
+      
+      // 年が含まれていない場合は現在の年を使用
+      if (match.length === 4) {
+        year = parseInt(convertFullWidthToHalfWidth(match[1]));
+        month = parseInt(convertFullWidthToHalfWidth(match[2]));
+        day = parseInt(convertFullWidthToHalfWidth(match[3]));
+      }
+      
+      // 月が12より大きく、現在の月より小さい場合は来年
+      if (month > 12) {
+        year++;
+        month = month - 12;
+      } else if (month < new Date().getMonth() + 1) {
+        year++;
+      }
+      
+      return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    }
+  }
+  
+  return null;
+}
+
 // 市場を判定
 export function determineMarket(source: string, brand: string): string {
   if (source.includes('suntory') || source.includes('prtimes')) {
@@ -352,6 +399,9 @@ export function convertNewsToRelease(newsItem: NewsItem): ReleaseItem | null {
   // 表現名を抽出
   const expression = extractExpression(newsItem.title, brand);
   
+  // 発売日を抽出
+  const releaseDate = extractReleaseDate(newsItem.title);
+  
   // 市場を判定
   const market = determineMarket(newsItem.source, brand);
   
@@ -359,6 +409,7 @@ export function convertNewsToRelease(newsItem: NewsItem): ReleaseItem | null {
     brand,
     expression,
     announced_date: newsItem.pub_date,
+    on_sale_date: releaseDate,
     source_type: "press",
     source_url: newsItem.link,
     market,

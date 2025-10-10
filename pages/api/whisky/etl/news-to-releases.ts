@@ -89,6 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .insert({
             expression_id: expression!.id,
             announced_date: release.announced_date,
+            on_sale_date: release.on_sale_date,
             source_type: release.source_type,
             source_url: release.source_url,
             market: release.market,
