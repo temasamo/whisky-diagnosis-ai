@@ -254,11 +254,11 @@ export default function WhiskyChat() {
       
       // 診断結果を構築
       const diagnosisResult = {
-        scene: messages.find(m => m.role === "user" && QUESTIONS[0].options.includes(m.text))?.text,
-        region: messages.find(m => m.role === "user" && QUESTIONS[1].options.includes(m.text))?.text,
-        peat: messages.find(m => m.role === "user" && QUESTIONS[2].options.includes(m.text))?.text,
-        budget: messages.find(m => m.role === "user" && QUESTIONS[3].options.includes(m.text))?.text,
-        volume: messages.find(m => m.role === "user" && QUESTIONS[4].options.includes(m.text))?.text,
+        scene: messages.find(m => m.role === "user" && QUESTIONS.find(q => q.id === "scene")?.options.includes(m.text))?.text,
+        region: messages.find(m => m.role === "user" && QUESTIONS.find(q => q.id === "region")?.options.includes(m.text))?.text,
+        peat: messages.find(m => m.role === "user" && QUESTIONS.find(q => q.id === "peat")?.options.includes(m.text))?.text,
+        budget: messages.find(m => m.role === "user" && QUESTIONS.find(q => q.id === "budget")?.options.includes(m.text))?.text,
+        volume: messages.find(m => m.role === "user" && QUESTIONS.find(q => q.id === "volume")?.options.includes(m.text))?.text,
       };
 
       // RAG知識を統合
@@ -276,8 +276,22 @@ export default function WhiskyChat() {
         console.error("RAG insights error:", ragError);
       }
 
+      // 予算を数値に変換
+      const budgetMap: { [key: string]: number } = {
+        "〜3,000円": 3000,
+        "〜5,000円": 5000,
+        "〜8,000円": 8000,
+        "〜15,000円": 15000,
+        "〜30,000円": 30000
+      };
+      
+      const budgetValue = diagnosisResult.budget ? budgetMap[diagnosisResult.budget] : 5000;
+      
+      console.log("診断結果:", diagnosisResult);
+      console.log("予算値:", budgetValue);
+      
       // 商品検索
-      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&budget=5000`);
+      const response = await fetch(`/api/search?q=${encodeURIComponent(query)}&budget=${budgetValue}`);
       const data = await response.json();
       setResults(data.items || []);
       setShowSearchButton(false);

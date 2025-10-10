@@ -398,8 +398,29 @@ export default async function handler(
     const prices = merged.map(x=>x.price).filter((n): n is number => typeof n === "number");
     const { pmin, pmax } = winsorize(prices, 0.05, 0.95);
 
+    // 予算フィルタリング
+    let budgetFiltered = merged;
+    if (budget > 0) {
+      console.log(`Budget filtering: ${budget} yen`);
+      budgetFiltered = merged.filter(item => {
+        if (!item.price) return true; // 価格情報がない場合は含める
+        return item.price <= budget;
+      });
+      console.log(`Budget filtering: ${merged.length} -> ${budgetFiltered.length} items`);
+      
+      // 予算内の商品が少ない場合は、予算の1.5倍まで許容
+      if (budgetFiltered.length < 5) {
+        const extendedBudget = budget * 1.5;
+        budgetFiltered = merged.filter(item => {
+          if (!item.price) return true;
+          return item.price <= extendedBudget;
+        });
+        console.log(`Extended budget filtering (${extendedBudget}): ${budgetFiltered.length} items`);
+      }
+    }
+
     const byKey: Record<string, RawProduct[]> = {};
-    for (const p of merged) {
+    for (const p of budgetFiltered) {
       const key = canonicalKey(p.title);
       (byKey[key] ||= []).push(p);
     }
