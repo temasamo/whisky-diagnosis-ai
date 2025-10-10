@@ -51,7 +51,8 @@ export default function RAGAdmin() {
   const [history, setHistory] = useState<LearningHistory[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'knowledge' | 'history' | 'stats'>('knowledge');
+  const [activeTab, setActiveTab] = useState<'products' | 'system' | 'history' | 'stats'>('products');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -102,6 +103,26 @@ export default function RAGAdmin() {
     return labels[level as keyof typeof labels] || level;
   };
 
+  // 商品関連とシステム関連に分類
+  const productKnowledge = knowledge.filter(k => k.category !== 'システム');
+  const systemKnowledge = knowledge.filter(k => k.category === 'システム');
+
+  // 検索フィルタリング
+  const filteredProductKnowledge = productKnowledge.filter(k => 
+    !searchQuery || 
+    k.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    k.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    k.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    k.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const filteredSystemKnowledge = systemKnowledge.filter(k => 
+    !searchQuery || 
+    k.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    k.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    k.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -132,18 +153,46 @@ export default function RAGAdmin() {
           </div>
         </div>
 
+        {/* 検索バー */}
+        <div className="mb-6">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="ウイスキー名、ブランド、タグで検索..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+            />
+            <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
         {/* タブナビゲーション */}
         <div className="mb-6">
           <nav className="flex space-x-8">
             <button
-              onClick={() => setActiveTab('knowledge')}
+              onClick={() => setActiveTab('products')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'knowledge'
+                activeTab === 'products'
                   ? 'border-amber-500 text-amber-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              知識ベース ({knowledge.length})
+              商品知識 ({filteredProductKnowledge.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('system')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'system'
+                  ? 'border-amber-500 text-amber-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              システムルール ({filteredSystemKnowledge.length})
             </button>
             <button
               onClick={() => setActiveTab('history')}
@@ -169,16 +218,16 @@ export default function RAGAdmin() {
         </div>
 
         {/* コンテンツ */}
-        {activeTab === 'knowledge' && (
+        {activeTab === 'products' && (
           <div className="bg-white rounded-lg shadow">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">ウイスキー知識ベース</h2>
+              <h2 className="text-lg font-medium text-gray-900">ウイスキー商品知識</h2>
               <p className="mt-1 text-sm text-gray-500">
-                現在 {knowledge.length} 件の知識が登録されています
+                登録されているウイスキー商品の専門知識一覧 ({filteredProductKnowledge.length}件)
               </p>
             </div>
             <div className="divide-y divide-gray-200">
-              {knowledge.map((item) => (
+              {filteredProductKnowledge.map((item) => (
                 <div key={item.id} className="px-6 py-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -235,6 +284,68 @@ export default function RAGAdmin() {
                   </div>
                 </div>
               ))}
+              {filteredProductKnowledge.length === 0 && (
+                <div className="p-6 text-center text-gray-500">
+                  {searchQuery ? '検索条件に一致する商品が見つかりませんでした' : '商品知識が登録されていません'}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'system' && (
+          <div className="bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-medium text-gray-900">システムルール</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                商品判定やカテゴリ分類に関するシステムルール ({filteredSystemKnowledge.length}件)
+              </p>
+            </div>
+            <div className="divide-y divide-gray-200">
+              {filteredSystemKnowledge.map((item) => (
+                <div key={item.id} className="px-6 py-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <h3 className="text-lg font-medium text-gray-900">
+                          {item.name}
+                        </h3>
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          システム
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-gray-600">{item.description}</p>
+                      
+                      <div className="mt-2">
+                        <h4 className="text-sm font-medium text-gray-700">ルール詳細</h4>
+                        <div className="bg-gray-50 p-3 rounded-md mt-1">
+                          <p className="text-sm text-gray-700">{item.characteristics.uniqueness}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {item.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ml-4 text-right text-xs text-gray-500">
+                      <p>信頼度: {(item.confidence * 100).toFixed(0)}%</p>
+                      <p>出典: {item.source}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {filteredSystemKnowledge.length === 0 && (
+                <div className="p-6 text-center text-gray-500">
+                  {searchQuery ? '検索条件に一致するシステムルールが見つかりませんでした' : 'システムルールが登録されていません'}
+                </div>
+              )}
             </div>
           </div>
         )}
