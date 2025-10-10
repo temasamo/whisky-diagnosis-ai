@@ -484,10 +484,66 @@ export function initializeRAGDatabase(): void {
     },
   ];
 
+  // 商品カテゴリ判定ルールを追加
+  const categoryRules = [
+    {
+      brand: 'システム',
+      name: 'ウイスキー関連商品判定ルール',
+      category: 'システム',
+      characteristics: {
+        taste: [],
+        smokiness: 'none' as const,
+        fruitiness: 'none' as const,
+        aftertaste: '',
+        uniqueness: '商品カテゴリの自動判定ルール',
+      },
+      availability: {
+        level: 'easy' as const,
+        description: '常に利用可能',
+        recentTrend: 'ルールが更新される',
+      },
+      priceRange: {
+        min: 0,
+        max: 0,
+        category: 'budget' as const,
+      },
+      description: 'ウイスキー関連商品の判定ルール。ハイボールはウイスキーベースの飲料として含める。チューハイは焼酎ベースなので除外。ビール、ワイン、日本酒、焼酎などは除外対象。',
+      tags: ['ルール', '判定', 'カテゴリ', 'ウイスキー', 'ハイボール', 'チューハイ除外', 'ビール除外', 'ワイン除外'],
+      source: 'システム定義',
+      confidence: 1.0,
+    },
+    {
+      brand: 'システム',
+      name: '除外対象商品カテゴリ',
+      category: 'システム',
+      characteristics: {
+        taste: [],
+        smokiness: 'none' as const,
+        fruitiness: 'none' as const,
+        aftertaste: '',
+        uniqueness: 'ウイスキー以外の商品カテゴリ',
+      },
+      availability: {
+        level: 'easy' as const,
+        description: '常に利用可能',
+        recentTrend: 'ルールが更新される',
+      },
+      priceRange: {
+        min: 0,
+        max: 0,
+        category: 'budget' as const,
+      },
+      description: 'ウイスキー以外の商品カテゴリ：196シリーズ（RTD飲料）、チューハイ（焼酎ベース）、ビール、ワイン、梅酒、スパークリング、ブランデー、コニャック、ラム、ウォッカ、ジン、テキーラ、焼酎、日本酒、清酒、カクテル、ソフトドリンク、炭酸、ジュース、お茶、コーヒー、水、ミネラルウォーター、エナジードリンク、スポーツドリンク、機能性飲料、RTD、ready to drink、無糖、果実、フルーツ、甘い、フレーバー、味など',
+      tags: ['除外', '196シリーズ', 'チューハイ', 'ビール', 'ワイン', '日本酒', '焼酎', 'ソフトドリンク', '無糖', 'フルーツ'],
+      source: 'システム定義',
+      confidence: 1.0,
+    }
+  ];
+
   // データベースに追加
-  console.log('Initializing RAG database with', suntoryWhiskies.length + nikkaWhiskies.length, 'items');
+  console.log('Initializing RAG database with', suntoryWhiskies.length + nikkaWhiskies.length + categoryRules.length, 'items');
   
-  [...suntoryWhiskies, ...nikkaWhiskies].forEach(whisky => {
+  [...suntoryWhiskies, ...nikkaWhiskies, ...categoryRules].forEach(whisky => {
     const id = ragDatabase.addKnowledge(whisky);
     console.log('Added knowledge:', whisky.brand, whisky.name, 'ID:', id);
   });

@@ -5,7 +5,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const results = {
       suntory: { success: false, inserted: 0, error: null },
       nikka: { success: false, inserted: 0, error: null },
-      asahi: { success: false, inserted: 0, error: null }
+      asahi: { success: false, inserted: 0, error: null },
+      newsToReleases: { success: false, converted: 0, inserted: 0, error: null }
     };
 
     // サントリーETL実行
@@ -47,8 +48,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       results.asahi.error = e.message;
     }
 
-    const totalInserted = results.suntory.inserted + results.nikka.inserted + results.asahi.inserted;
-    const allSuccess = results.suntory.success && results.nikka.success && results.asahi.success;
+    // ニュース→リリース変換ETL実行
+    try {
+      const newsToReleasesRes = await fetch(`${req.headers.host?.includes('localhost') ? 'http' : 'https'}://${req.headers.host}/api/whisky/etl/news-to-releases`);
+      const newsToReleasesData = await newsToReleasesRes.json();
+      results.newsToReleases = {
+        success: newsToReleasesRes.ok,
+        converted: newsToReleasesData.releases || 0,
+        inserted: newsToReleasesData.inserted || 0,
+        error: newsToReleasesRes.ok ? null : newsToReleasesData.error
+      };
+    } catch (e: any) {
+      results.newsToReleases.error = e.message;
+    }
+
+    const totalInserted = results.suntory.inserted + results.nikka.inserted + results.asahi.inserted + results.newsToReleases.inserted;
+    const allSuccess = results.suntory.success && results.nikka.success && results.asahi.success && results.newsToReleases.success;
 
     res.status(allSuccess ? 200 : 207).json({
       summary: {
@@ -56,7 +71,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         allSuccess,
         timestamp: new Date().toISOString()
       },
-      results
+      results,
+      message: `ETL completed: ${totalInserted} total items processed (${results.newsToReleases.converted} news items converted to releases)`
     });
 
   } catch (e: any) {
