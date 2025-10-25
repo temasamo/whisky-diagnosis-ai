@@ -51,8 +51,36 @@ export default function RAGAdmin() {
   const [history, setHistory] = useState<LearningHistory[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'products' | 'system' | 'history' | 'stats'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'system' | 'history' | 'stats' | 'add'>('products');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [addFormData, setAddFormData] = useState({
+    brand: '',
+    name: '',
+    category: '',
+    description: '',
+    characteristics: {
+      taste: [] as string[],
+      smokiness: 'none' as 'none' | 'light' | 'medium' | 'strong',
+      fruitiness: 'none' as 'none' | 'light' | 'medium' | 'strong',
+      aftertaste: '',
+      uniqueness: ''
+    },
+    availability: {
+      level: 'easy' as 'easy' | 'moderate' | 'difficult',
+      description: '',
+      recentTrend: ''
+    },
+    priceRange: {
+      min: 0,
+      max: 0,
+      category: 'budget' as 'budget' | 'mid' | 'premium' | 'luxury'
+    },
+    tags: [] as string[],
+    source: '',
+    confidence: 0.9
+  });
+  const [addFormLoading, setAddFormLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -101,6 +129,61 @@ export default function RAGAdmin() {
       difficult: '入手困難',
     };
     return labels[level as keyof typeof labels] || level;
+  };
+
+  const handleAddKnowledge = async () => {
+    try {
+      setAddFormLoading(true);
+      
+      const response = await fetch('/api/rag/knowledge/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(addFormData),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert('知識が正常に追加されました');
+        setShowAddForm(false);
+        setAddFormData({
+          brand: '',
+          name: '',
+          category: '',
+          description: '',
+          characteristics: {
+            taste: [],
+            smokiness: 'none',
+            fruitiness: 'none',
+            aftertaste: '',
+            uniqueness: ''
+          },
+          availability: {
+            level: 'easy',
+            description: '',
+            recentTrend: ''
+          },
+          priceRange: {
+            min: 0,
+            max: 0,
+            category: 'budget'
+          },
+          tags: [],
+          source: '',
+          confidence: 0.9
+        });
+        fetchData(); // データを再取得
+      } else {
+        alert(`エラー: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('知識追加エラー:', error);
+      alert('知識の追加に失敗しました');
+    } finally {
+      setAddFormLoading(false);
+    }
   };
 
   // 商品関連とシステム関連に分類
@@ -213,6 +296,16 @@ export default function RAGAdmin() {
               }`}
             >
               統計情報
+            </button>
+            <button
+              onClick={() => setActiveTab('add')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'add'
+                  ? 'border-amber-500 text-amber-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              知識追加
             </button>
           </nav>
         </div>
@@ -411,6 +504,243 @@ export default function RAGAdmin() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'add' && (
+          <div className="bg-white rounded-lg shadow">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h2 className="text-lg font-medium text-gray-900">新しい知識を追加</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                ウイスキーの専門知識を新規登録します
+              </p>
+            </div>
+            <div className="p-6">
+              <form onSubmit={(e) => { e.preventDefault(); handleAddKnowledge(); }} className="space-y-6">
+                {/* 基本情報 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      ブランド名 *
+                    </label>
+                    <input
+                      type="text"
+                      value={addFormData.brand}
+                      onChange={(e) => setAddFormData({...addFormData, brand: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      商品名 *
+                    </label>
+                    <input
+                      type="text"
+                      value={addFormData.name}
+                      onChange={(e) => setAddFormData({...addFormData, name: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      カテゴリ *
+                    </label>
+                    <select
+                      value={addFormData.category}
+                      onChange={(e) => setAddFormData({...addFormData, category: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                      required
+                    >
+                      <option value="">選択してください</option>
+                      <option value="サントリー">サントリー</option>
+                      <option value="ニッカ">ニッカ</option>
+                      <option value="その他">その他</option>
+                      <option value="システム">システム</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      信頼度
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={addFormData.confidence}
+                      onChange={(e) => setAddFormData({...addFormData, confidence: parseFloat(e.target.value)})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    説明 *
+                  </label>
+                  <textarea
+                    value={addFormData.description}
+                    onChange={(e) => setAddFormData({...addFormData, description: e.target.value})}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                    required
+                  />
+                </div>
+
+                {/* 味わい特性 */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">味わい特性</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        スモーキー度
+                      </label>
+                      <select
+                        value={addFormData.characteristics.smokiness}
+                        onChange={(e) => setAddFormData({
+                          ...addFormData,
+                          characteristics: {...addFormData.characteristics, smokiness: e.target.value as any}
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                      >
+                        <option value="none">なし</option>
+                        <option value="light">軽い</option>
+                        <option value="medium">中程度</option>
+                        <option value="strong">強い</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        フルーティ度
+                      </label>
+                      <select
+                        value={addFormData.characteristics.fruitiness}
+                        onChange={(e) => setAddFormData({
+                          ...addFormData,
+                          characteristics: {...addFormData.characteristics, fruitiness: e.target.value as any}
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                      >
+                        <option value="none">なし</option>
+                        <option value="light">軽い</option>
+                        <option value="medium">中程度</option>
+                        <option value="strong">強い</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      後味
+                    </label>
+                    <input
+                      type="text"
+                      value={addFormData.characteristics.aftertaste}
+                      onChange={(e) => setAddFormData({
+                        ...addFormData,
+                        characteristics: {...addFormData.characteristics, aftertaste: e.target.value}
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+
+                {/* 価格帯 */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">価格帯</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        最低価格
+                      </label>
+                      <input
+                        type="number"
+                        value={addFormData.priceRange.min}
+                        onChange={(e) => setAddFormData({
+                          ...addFormData,
+                          priceRange: {...addFormData.priceRange, min: parseInt(e.target.value) || 0}
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        最高価格
+                      </label>
+                      <input
+                        type="number"
+                        value={addFormData.priceRange.max}
+                        onChange={(e) => setAddFormData({
+                          ...addFormData,
+                          priceRange: {...addFormData.priceRange, max: parseInt(e.target.value) || 0}
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        価格カテゴリ
+                      </label>
+                      <select
+                        value={addFormData.priceRange.category}
+                        onChange={(e) => setAddFormData({
+                          ...addFormData,
+                          priceRange: {...addFormData.priceRange, category: e.target.value as any}
+                        })}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                      >
+                        <option value="budget">予算</option>
+                        <option value="mid">中級</option>
+                        <option value="premium">高級</option>
+                        <option value="luxury">最高級</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* タグ */}
+                <div className="border-t pt-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-4">タグ</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      タグ（カンマ区切り）
+                    </label>
+                    <input
+                      type="text"
+                      value={addFormData.tags.join(', ')}
+                      onChange={(e) => setAddFormData({
+                        ...addFormData,
+                        tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag)
+                      })}
+                      placeholder="入門, 飲みやすい, 手頃"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-amber-500 focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+
+                {/* 送信ボタン */}
+                <div className="border-t pt-6 flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('products')}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={addFormLoading}
+                    className="px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 disabled:opacity-50"
+                  >
+                    {addFormLoading ? '追加中...' : '知識を追加'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
