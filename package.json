@@ -6,13 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "export:whisky": "tsx scripts/exportWhiskyData.ts",
+    "import:whisky": "tsx scripts/importWhiskyData.ts",
+    "import:whisky-knowledge": "tsx scripts/importWhiskyKnowledge.ts",
+    "embed:whisky": "tsx scripts/embedWhiskyData.ts",
+    "check:env": "tsx scripts/check-env.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.58.0",
     "cheerio": "^1.1.2",
     "fast-xml-parser": "^5.3.0",
     "next": "15.5.3",
+    "openai": "^4.0.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "swr": "^2.3.6"
@@ -26,6 +32,8 @@
     "eslint": "^9",
     "eslint-config-next": "15.5.3",
     "tailwindcss": "^4",
+    "dotenv": "^16.0.0",
+    "tsx": "^4.0.0",
     "typescript": "^5"
   }
 }

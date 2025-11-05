@@ -241,6 +241,11 @@ class RAGDatabase {
       .slice(0, limit);
   }
 
+  // 全知識の取得
+  getAllKnowledge(): WhiskyKnowledge[] {
+    return Array.from(this.knowledge.values());
+  }
+
   // 統計情報の取得
   getStats(): {
     totalKnowledge: number;
