@@ -73,6 +73,10 @@ export default function WhiskyLanding() {
             <span className="mr-2">🥃</span>
             チャット診断（新UI）
           </Link>
+          <Link href="/whisky/chat-rag" className="inline-flex items-center px-5 py-3 rounded-xl border hover:bg-gray-50 transition-colors bg-amber-50 border-amber-200">
+            <span className="mr-2">🧠</span>
+            RAGチャット（知識検索）
+          </Link>
           <Link href="/whisky/releases/calendar" className="inline-flex items-center px-5 py-3 rounded-xl border hover:bg-gray-50 transition-colors">
             <span className="mr-2">📅</span>
             発売日カレンダー
