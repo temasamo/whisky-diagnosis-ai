@@ -6,6 +6,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 
 export default function WhiskyChatRag() {
   const [messages, setMessages] = useState([
@@ -98,32 +99,98 @@ export default function WhiskyChatRag() {
           overflowY: "auto",
           height: "65vh",
           boxShadow: "0 0 8px rgba(0,0,0,0.3)",
+          position: "relative",
+          backgroundImage: "url('/bartender/bartender-background.jpg')",
+          backgroundSize: "60% auto",
+          backgroundPosition: "center top",
+          backgroundRepeat: "no-repeat",
         }}
       >
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            style={{
-              marginBottom: "1rem",
-              textAlign: msg.role === "user" ? "right" : "left",
-            }}
-          >
+        {/* 背景画像の上に半透明のオーバーレイ */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(59, 43, 36, 0.7)",
+            borderRadius: "12px",
+            zIndex: 0,
+          }}
+        />
+        <div style={{ position: "relative", zIndex: 1 }}>
+          {messages.map((msg, i) => (
             <div
+              key={i}
               style={{
-                display: "inline-block",
-                backgroundColor:
-                  msg.role === "user" ? "#a67b5b" : "rgba(242,228,201,0.1)",
-                padding: "0.8rem 1rem",
-                borderRadius: "10px",
-                maxWidth: "85%",
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
+                marginBottom: "1rem",
+                display: "flex",
+                alignItems: "flex-start",
+                flexDirection: msg.role === "user" ? "row-reverse" : "row",
+                gap: "0.75rem",
               }}
             >
-              {msg.content}
+              {/* アシスタントメッセージの場合のみアバターを表示 */}
+              {msg.role === "assistant" && (
+                <div
+                  style={{
+                    flexShrink: 0,
+                    width: "48px",
+                    height: "48px",
+                    borderRadius: "50%",
+                    overflow: "hidden",
+                    border: "2px solid #d2a679",
+                    backgroundColor: "#3b2b24",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "24px",
+                  }}
+                >
+                  <Image
+                    src="/bartender/bartender-avatar.jpg"
+                    alt="バーテンダーAI"
+                    width={48}
+                    height={48}
+                    style={{
+                      objectFit: "cover",
+                      width: "100%",
+                      height: "100%",
+                    }}
+                    onError={(e) => {
+                      // 画像が存在しない場合のフォールバック（アイコンを表示）
+                      e.currentTarget.style.display = "none";
+                      const parent = e.currentTarget.parentElement;
+                      if (parent && !parent.querySelector(".fallback-icon")) {
+                        const fallback = document.createElement("span");
+                        fallback.className = "fallback-icon";
+                        fallback.textContent = "🥃";
+                        fallback.style.fontSize = "24px";
+                        parent.appendChild(fallback);
+                      }
+                    }}
+                  />
+                </div>
+              )}
+              <div
+                style={{
+                  display: "inline-block",
+                  backgroundColor:
+                    msg.role === "user" ? "#a67b5b" : "rgba(242,228,201,0.15)",
+                  padding: "0.8rem 1rem",
+                  borderRadius: "10px",
+                  maxWidth: "75%",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                  textAlign: msg.role === "user" ? "right" : "left",
+                }}
+              >
+                {msg.content}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <div
