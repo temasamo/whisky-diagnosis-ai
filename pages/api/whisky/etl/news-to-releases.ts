@@ -44,42 +44,89 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           brand: r.brand,
           expression: r.expression,
           announced_date: r.announced_date,
-          market: r.market,
-          source_url: r.source_url
+          on_sale_date: r.on_sale_date
         }))
       });
     }
 
     let inserted = 0;
     let skipped = 0;
+    const errors: any[] = [];
+
+    console.log(`Processing ${releases.length} releases...`);
 
     // 各リリースをデータベースに保存
     for (const release of releases) {
+      console.log(`Processing release: ${release.brand} - ${release.expression}`);
       try {
-        // ブランドをupsert
-        const { data: brand, error: brandError } = await supabase
+        // ブランドを取得または作成
+        let { data: brand, error: brandError } = await supabase
           .from("brands")
-          .upsert({ name: release.brand }, { onConflict: "name" })
           .select("id")
+          .eq("name", release.brand)
           .single();
 
-        if (brandError) {
-          console.error("Brand upsert error:", brandError);
+        if (brandError && brandError.code === "PGRST116") {
+          // ブランドが存在しない場合は作成
+          const { data: newBrand, error: createError } = await supabase
+            .from("brands")
+            .insert({ name: release.brand })
+            .select("id")
+            .single();
+          
+          if (createError) {
+            console.error("Brand create error:", createError);
+            errors.push({ type: "brand", error: createError.message, brand: release.brand });
+            skipped++;
+            continue;
+          }
+          brand = newBrand;
+        } else if (brandError) {
+          console.error("Brand select error:", brandError);
+          errors.push({ type: "brand", error: brandError.message, brand: release.brand });
+          skipped++;
           continue;
         }
 
-        // 表現をupsert
-        const { data: expression, error: exprError } = await supabase
+        if (!brand) {
+          console.error("Brand not found and could not be created");
+          skipped++;
+          continue;
+        }
+
+        // 表現を取得または作成
+        let { data: expression, error: exprError } = await supabase
           .from("expressions")
-          .upsert(
-            { brand_id: brand!.id, name: release.expression }, 
-            { onConflict: "brand_id,name" }
-          )
           .select("id")
+          .eq("brand_id", brand.id)
+          .eq("name", release.expression)
           .single();
 
-        if (exprError) {
-          console.error("Expression upsert error:", exprError);
+        if (exprError && exprError.code === "PGRST116") {
+          // 表現が存在しない場合は作成
+          const { data: newExpr, error: createError } = await supabase
+            .from("expressions")
+            .insert({ brand_id: brand.id, name: release.expression })
+            .select("id")
+            .single();
+          
+          if (createError) {
+            console.error("Expression create error:", createError);
+            errors.push({ type: "expression", error: createError.message, brand: release.brand, expression: release.expression });
+            skipped++;
+            continue;
+          }
+          expression = newExpr;
+        } else if (exprError) {
+          console.error("Expression select error:", exprError);
+          errors.push({ type: "expression", error: exprError.message, brand: release.brand, expression: release.expression });
+          skipped++;
+          continue;
+        }
+
+        if (!expression) {
+          console.error("Expression not found and could not be created");
+          skipped++;
           continue;
         }
 
@@ -91,19 +138,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             announced_date: release.announced_date,
             on_sale_date: release.on_sale_date,
             source_type: release.source_type,
-            source_url: release.source_url,
-            market: release.market,
-            source_org: release.source_org,
           });
 
         if (releaseError) {
-          console.error("Release upsert error:", releaseError);
+          console.error("Release insert error:", releaseError);
+          console.error("Release data:", {
+            expression_id: expression!.id,
+            announced_date: release.announced_date,
+            on_sale_date: release.on_sale_date,
+            source_type: release.source_type,
+            source_org: release.source_org,
+          });
+          errors.push({ 
+            type: "release", 
+            error: releaseError.message, 
+            code: releaseError.code,
+            brand: release.brand, 
+            expression: release.expression 
+          });
           skipped++;
         } else {
           inserted++;
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error processing release:", error);
+        console.error("Error details:", error.message, error.stack);
         skipped++;
       }
     }
@@ -113,7 +172,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       releases: releases.length,
       inserted,
       skipped,
-      message: `Successfully converted ${inserted} news items to releases`
+      errors: errors.length > 0 ? errors.slice(0, 5) : undefined,
+      message: `Successfully converted ${inserted} news items to releases${errors.length > 0 ? `, ${skipped} skipped due to errors` : ""}`
     });
 
   } catch (error: any) {
