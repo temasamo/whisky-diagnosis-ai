@@ -45,6 +45,12 @@ export default function Home() {
         >
           RAG知識ベース管理
         </Link>
+        <Link 
+          href="/whisky/etl/status"
+          className="rounded-xl bg-blue-600 text-white px-6 py-4 text-center hover:opacity-90"
+        >
+          📊 発売情報取得の状態
+        </Link>
       </div>
 
       {/* 今日の新着ウィジェット */}
