@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 
 /**
  * ニュース取得APIを一括実行する
- * サントリー、ニッカ、アサヒのRSSフィードを取得
+ * サントリー、ニッカ、アサヒ、キリン、マルス、イチローズモルト、嘉之助、長濱のRSSフィードを取得
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -57,6 +57,91 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } catch (err: any) {
       results.push({
         source: "asahi",
+        status: "error",
+        error: err.message,
+      });
+    }
+
+    // 4. キリン
+    try {
+      const kirinRes = await fetch(`${baseUrl}/api/whisky/etl/kirin`);
+      const kirinData = await kirinRes.json();
+      results.push({
+        source: "kirin",
+        status: kirinRes.ok ? "success" : "error",
+        data: kirinData,
+      });
+    } catch (err: any) {
+      results.push({
+        source: "kirin",
+        status: "error",
+        error: err.message,
+      });
+    }
+
+    // 5. マルス
+    try {
+      const marsRes = await fetch(`${baseUrl}/api/whisky/etl/mars`);
+      const marsData = await marsRes.json();
+      results.push({
+        source: "mars",
+        status: marsRes.ok ? "success" : "error",
+        data: marsData,
+      });
+    } catch (err: any) {
+      results.push({
+        source: "mars",
+        status: "error",
+        error: err.message,
+      });
+    }
+
+    // 6. イチローズモルト
+    try {
+      const ichirusRes = await fetch(`${baseUrl}/api/whisky/etl/ichirus`);
+      const ichirusData = await ichirusRes.json();
+      results.push({
+        source: "ichirus",
+        status: ichirusRes.ok ? "success" : "error",
+        data: ichirusData,
+      });
+    } catch (err: any) {
+      results.push({
+        source: "ichirus",
+        status: "error",
+        error: err.message,
+      });
+    }
+
+    // 7. 嘉之助
+    try {
+      const kanosukeRes = await fetch(`${baseUrl}/api/whisky/etl/kanosuke`);
+      const kanosukeData = await kanosukeRes.json();
+      results.push({
+        source: "kanosuke",
+        status: kanosukeRes.ok ? "success" : "error",
+        data: kanosukeData,
+      });
+    } catch (err: any) {
+      results.push({
+        source: "kanosuke",
+        status: "error",
+        error: err.message,
+      });
+    }
+
+    // 8. 長濱
+    try {
+      const nagahamaRes = await fetch(`${baseUrl}/api/whisky/etl/nagahama`);
+      const nagahamaData = await nagahamaRes.json();
+      results.push({
+        source: "nagahama",
+        status: nagahamaRes.ok ? "success" : "error",
+        data: nagahamaData,
+      });
+    } catch (err: any) {
+      results.push({
+        source: "nagahama",
         status: "error",
         error: err.message,
       });
