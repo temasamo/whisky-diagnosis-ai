@@ -2,7 +2,7 @@ name: Fetch Whisky News Daily
 
 on:
   schedule:
-    - cron: "0 0 * * *"  # 毎日 9:00 JST（UTCで0:00）
+    - cron: "0 0 * * *" # 毎日 9:00 JST（UTCで0:00）
   workflow_dispatch:
 
 jobs:
@@ -12,4 +12,4 @@ jobs:
       - name: Call Vercel ETL API
         run: |
           curl -X GET "https://whisky-diagnosis-ai.vercel.app/api/whisky/etl/fetch-news"
-　　　　　　curl -X POST "https://whisky-diagnosis-ai.vercel.app/api/whisky/etl/news-to-releases"
+          curl -X POST "https://whisky-diagnosis-ai.vercel.app/api/whisky/etl/news-to-releases"
