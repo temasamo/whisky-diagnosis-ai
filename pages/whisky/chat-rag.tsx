@@ -7,6 +7,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import ReactMarkdown from "react-markdown";
 
 export default function WhiskyChatRag() {
   const [messages, setMessages] = useState([
@@ -181,12 +182,24 @@ export default function WhiskyChatRag() {
                   padding: "0.8rem 1rem",
                   borderRadius: "10px",
                   maxWidth: "75%",
-                  whiteSpace: "pre-wrap",
                   wordBreak: "break-word",
                   textAlign: msg.role === "user" ? "right" : "left",
                 }}
               >
-                {msg.content}
+                {msg.role === "assistant" ? (
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => <p style={{ margin: "0.5rem 0" }}>{children}</p>,
+                      strong: ({ children }) => <strong style={{ fontWeight: "bold", color: "#d2a679" }}>{children}</strong>,
+                      ul: ({ children }) => <ul style={{ margin: "0.5rem 0", paddingLeft: "1.5rem" }}>{children}</ul>,
+                      li: ({ children }) => <li style={{ margin: "0.25rem 0" }}>{children}</li>,
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                ) : (
+                  <span style={{ whiteSpace: "pre-wrap" }}>{msg.content}</span>
+                )}
               </div>
             </div>
           ))}

@@ -56,7 +56,7 @@ export default async function handler(
       "match_whisky_articles",
       {
         query_embedding: queryEmbedding,
-        match_threshold: 0.5, // 閾値を下げてより多くの結果を取得
+        match_threshold: 0.3, // 閾値を下げてより多くの結果を取得
         match_count: 3,
       }
     );
@@ -66,9 +66,28 @@ export default async function handler(
       throw matchError;
     }
 
+    // 記事が見つからない場合でも、一般的な知識から回答を生成
     if (!matches || matches.length === 0) {
+      const fallbackCompletion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content:
+              "あなたはウイスキーの専門家ソムリエです。質問に対して、丁寧かつわかりやすく日本語で回答してください。文中に専門用語が出た場合は、初心者にもわかるように補足してください。",
+          },
+          {
+            role: "user",
+            content: `質問: ${query}\n\n関連する記事は見つかりませんでしたが、一般的なウイスキーの知識を基に回答してください。`,
+          },
+        ],
+        max_tokens: 500,
+      });
+
+      const fallbackAnswer = fallbackCompletion.choices[0].message?.content ?? "申し訳ございませんが、回答を生成できませんでした。";
+
       return res.status(200).json({
-        answer: "関連する記事が見つかりませんでした。",
+        answer: fallbackAnswer,
         sources: [],
       });
     }
