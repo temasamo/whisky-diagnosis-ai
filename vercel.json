@@ -4,5 +4,10 @@
       "path": "/api/whisky/etl/all",
       "schedule": "0 7 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "pages/api/whisky/rag/search.ts": {
+      "maxDuration": 30
+    }
+  }
 }

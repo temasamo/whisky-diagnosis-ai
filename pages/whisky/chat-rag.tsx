@@ -42,16 +42,25 @@ export default function WhiskyChatRag() {
     setMessages(loadingMessages);
 
     try {
+      // タイムアウト設定（25秒）
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+
       const res = await fetch("/api/whisky/rag/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: userMessage }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "APIエラーが発生しました");
+        // エラーメッセージをより詳細に表示
+        const errorMessage = data.error || "APIエラーが発生しました";
+        throw new Error(errorMessage);
       }
 
       const answer =
@@ -64,9 +73,18 @@ export default function WhiskyChatRag() {
       ]);
     } catch (err: any) {
       console.error("RAG Chat error:", err);
+      
+      let errorMessage = "⚠️ エラーが発生しました。もう一度お試しください。";
+      
+      if (err.name === "AbortError" || err.message?.includes("timeout")) {
+        errorMessage = "⏱️ リクエストがタイムアウトしました。時間をおいて再度お試しください。";
+      } else if (err.message && err.message !== "APIエラーが発生しました") {
+        errorMessage = `⚠️ ${err.message}`;
+      }
+      
       setMessages([
         ...newMessages,
-        { role: "assistant", content: "⚠️ エラーが発生しました。もう一度お試しください。" },
+        { role: "assistant", content: errorMessage },
       ]);
     } finally {
       setLoading(false);

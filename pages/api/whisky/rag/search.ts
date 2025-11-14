@@ -126,9 +126,34 @@ export default async function handler(
     });
   } catch (err: any) {
     console.error("❌ RAG検索エラー:", err);
+    
+    // タイムアウトエラーの検出
+    if (err.message?.includes("timeout") || err.message?.includes("TIMEOUT") || err.code === "ETIMEDOUT") {
+      return res.status(504).json({
+        error: "リクエストがタイムアウトしました。時間をおいて再度お試しください。",
+        details: "The request timed out. Please try again later.",
+      });
+    }
+    
+    // Supabaseエラーの検出
+    if (err.message?.includes("Supabase") || err.code === "PGRST") {
+      return res.status(503).json({
+        error: "データベースへの接続に失敗しました。しばらくしてから再度お試しください。",
+        details: err.message,
+      });
+    }
+    
+    // OpenAIエラーの検出
+    if (err.message?.includes("OpenAI") || err.status === 429) {
+      return res.status(503).json({
+        error: "AIサービスが一時的に利用できません。しばらくしてから再度お試しください。",
+        details: err.message,
+      });
+    }
+    
     return res.status(500).json({
       error: "RAG検索中にエラーが発生しました",
-      details: err.message,
+      details: process.env.NODE_ENV === "development" ? err.message : undefined,
     });
   }
 }
