@@ -16,7 +16,7 @@ const openai = new OpenAI({
 });
 
 const SUPA_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 const supabase = createClient(
   SUPA_URL!,
@@ -27,16 +27,31 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // OPTIONSリクエスト（プリフライト）の処理
+  if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    return res.status(200).end();
+  }
+
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "POSTメソッドのみ対応しています。" });
+    console.error(`❌ Invalid method: ${req.method}, expected POST`);
+    return res.status(405).json({ 
+      error: "Method not allowed",
+      message: `このエンドポイントはPOSTメソッドのみ対応しています。リクエストされたメソッド: ${req.method}`,
+    });
   }
 
   try {
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({ error: "OPENAI_API_KEY missing" });
     }
-    if (!SUPA_URL || !SUPA_KEY) {
-      return res.status(500).json({ error: "Supabase credentials missing" });
+    if (!SUPA_URL) {
+      return res.status(500).json({ error: "Supabase URL missing" });
+    }
+    if (!SUPA_KEY) {
+      return res.status(500).json({ error: "NEXT_PUBLIC_SUPABASE_ANON_KEY missing" });
     }
 
     const { query } = req.body;
@@ -53,7 +68,7 @@ export default async function handler(
 
     // Step2️⃣: Supabaseで類似検索
     const { data: matches, error: matchError } = await supabase.rpc(
-      "match_whisky_articles",
+      "match_whisky_embeddings_v2",
       {
         query_embedding: queryEmbedding,
         match_threshold: 0.3, // 閾値を下げてより多くの結果を取得
@@ -92,9 +107,9 @@ export default async function handler(
       });
     }
 
-    // Step3️⃣: 類似記事の本文を連結
+    // Step3️⃣: 類似ウイスキーの情報を連結
     const contextText = matches
-      .map((m: any) => `【${m.title}】\n${m.content}`)
+      .map((m: any) => `【${m.brand_name} ${m.expression_name}】\n${m.description || m.flavor_notes || "詳細情報なし"}`)
       .join("\n\n---\n\n");
 
     // Step4️⃣: ChatGPTに質問＋関連情報を渡して要約回答を生成
@@ -119,8 +134,10 @@ export default async function handler(
     return res.status(200).json({
       answer,
       sources: matches.map((m: any) => ({
-        title: m.title,
+        title: `${m.brand_name} ${m.expression_name}`,
         id: m.id,
+        brand_name: m.brand_name,
+        expression_name: m.expression_name,
         similarity: m.similarity,
       })),
     });

@@ -18,8 +18,17 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
+  // OPTIONSリクエスト（プリフライト）の処理
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    console.error(`❌ Invalid method: ${req.method}, expected POST`);
+    return res.status(405).json({ 
+      error: "Method not allowed",
+      message: `このエンドポイントはPOSTメソッドのみ対応しています。リクエストされたメソッド: ${req.method}`,
+    });
   }
 
   try {

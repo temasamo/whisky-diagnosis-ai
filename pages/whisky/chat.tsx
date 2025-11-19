@@ -27,10 +27,28 @@ export default function WhiskyChat() {
         body: JSON.stringify({ message: input }),
       });
 
-      const data = await res.json();
+      // 405エラー（Method Not Allowed）の処理
+      if (res.status === 405) {
+        throw new Error("APIエンドポイントが正しく設定されていません。管理者にお問い合わせください。");
+      }
+
+      // レスポンスボディを安全に読み取る
+      const text = await res.text();
+      
+      if (!text || text.trim() === "") {
+        throw new Error("サーバーからの応答が空です");
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseError: any) {
+        console.error("JSON parse error:", parseError, "Response text:", text.substring(0, 200));
+        throw new Error("サーバーからの応答の解析に失敗しました");
+      }
       
       if (!res.ok) {
-        throw new Error(data.error || "エラーが発生しました");
+        throw new Error(data?.error || `エラーが発生しました (ステータス: ${res.status})`);
       }
 
       if (data.bartender) {
@@ -41,9 +59,20 @@ export default function WhiskyChat() {
       }
     } catch (error: any) {
       console.error("Error:", error);
+      
+      let errorMessage = "申し訳ございません。エラーが発生しました。もう一度お試しください。";
+      
+      if (error.message?.includes("405") || error.message?.includes("Method Not Allowed")) {
+        errorMessage = "⚠️ APIエンドポイントの設定に問題があります。管理者にお問い合わせください。";
+      } else if (error.message?.includes("JSON") || error.message?.includes("解析")) {
+        errorMessage = "⚠️ サーバーからの応答を処理できませんでした。時間をおいて再度お試しください。";
+      } else if (error.message && error.message !== "エラーが発生しました") {
+        errorMessage = `⚠️ ${error.message}`;
+      }
+      
       setMessages((prev) => [
         ...prev,
-        { role: "bartender", content: "申し訳ございません。エラーが発生しました。もう一度お試しください。" },
+        { role: "bartender", content: errorMessage },
       ]);
     } finally {
       setLoading(false);
