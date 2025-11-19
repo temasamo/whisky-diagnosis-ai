@@ -49,7 +49,7 @@ export default async function handler(
       {
         query_embedding: embedding,
         match_threshold: 0.75,
-        match_count: 2,
+        match_count: 5,
       }
     );
 
@@ -58,7 +58,7 @@ export default async function handler(
       throw error;
     }
 
-    // 🟤 3. レスポンス生成用テキスト
+    // 🟤 3. レスポンス生成用テキスト（新仕様のカラム名を使用）
     const recommendationText = matches
       ?.map(
         (m: any, i: number) =>
@@ -89,9 +89,22 @@ ${recommendationText}
       max_tokens: 300,
     });
 
+    // 新仕様のカラム名にマッピング
+    const mappedRecommendations = (matches || []).map((item: any) => ({
+      id: item.id,
+      brand_name: item.brand_name,
+      expression_name: item.expression_name,
+      type: item.type,
+      region: item.region,
+      country: item.country,
+      flavor_notes: item.flavor_notes,
+      description: item.description,
+      similarity: item.similarity,
+    }));
+
     return res.status(200).json({
       bartender: reply.choices[0].message.content,
-      recommendations: matches || [],
+      recommendations: mappedRecommendations,
     });
   } catch (err: any) {
     console.error("Whisky Chat API error:", err);
