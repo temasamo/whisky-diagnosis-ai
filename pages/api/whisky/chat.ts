@@ -7,7 +7,7 @@ const openai = new OpenAI({
 });
 
 const SUPA_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPA_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPA_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 const supabase = createClient(
   SUPA_URL!,
@@ -20,6 +20,9 @@ export default async function handler(
 ) {
   // OPTIONSリクエスト（プリフライト）の処理
   if (req.method === "OPTIONS") {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
     return res.status(200).end();
   }
 
@@ -35,8 +38,11 @@ export default async function handler(
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({ error: "OPENAI_API_KEY missing" });
     }
-    if (!SUPA_URL || !SUPA_KEY) {
-      return res.status(500).json({ error: "Supabase credentials missing" });
+    if (!SUPA_URL) {
+      return res.status(500).json({ error: "Supabase URL missing" });
+    }
+    if (!SUPA_KEY) {
+      return res.status(500).json({ error: "NEXT_PUBLIC_SUPABASE_ANON_KEY missing" });
     }
 
     const { message } = req.body;
