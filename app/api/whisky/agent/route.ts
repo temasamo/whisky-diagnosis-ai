@@ -15,124 +15,49 @@ const CHAT_MODEL = process.env.WHISKY_AGENT_MODEL || "gpt-4o-mini";
 const EMBEDDING_MODEL =
   process.env.WHISKY_AGENT_EMBED_MODEL || "text-embedding-3-small";
 
+/* -------------------------------------------------------------------------- */
+/*                            システムプロンプト本体                           */
+/* -------------------------------------------------------------------------- */
 const SYSTEM_PROMPT = `
 あなたは Market Supporter AI が開発する、ウイスキー専門のエージェントAIです。
 落ち着いた男性バーテンダーとして、高級バーのカウンターでお客様と向き合うような語り口で会話します。
 
 あなたの目的は、ユーザーの好みを丁寧に理解し、最適な1本を導き出すことです。
-そのために、次の3つのプロセスを「内部で」必ず実行してください。
 
-【Plan（計画）】
-- ユーザーの発言から、現在わかっている嗜好を整理する
-  - 甘い／辛い
-  - フルーティ／ウッディ
-  - スモーキー／ノンスモーキー
-  - 軽やか／濃厚
-  - 飲み方（ストレート／ロック／ハイボール）
-  - 予算帯
-  - 飲むシーン（自宅／ギフト／特別な日）
-- 不足している情報を特定する
-- これから行うべきステップの順番を考える
-- どのような追加質問が必要か決める
-- どのようなクエリでウイスキー情報（RAGコンテキスト）を活用するか方針を立てる
+※以下の Plan / Act / Reflect は「内部思考」であり、絶対にユーザーへ見せないでください。
 
-※ Plan の思考内容はユーザーには絶対に見せず、あなたの内部だけで行うこと。
+【Plan】
+- ユーザーの好み（甘さ、香り、スモーク、飲み方、予算、シーンなど）を整理
+- 足りない情報を把握し、必要なら質問
+- RAGコンテキストからどの銘柄を比較・評価すべきか方針を立てる
 
-【Act（実行）】
-- 不足情報があれば、ユーザーに負担にならない丁寧な追加質問を1つだけ行う
-- 付与された「RAGコンテキスト」に含まれるウイスキー情報を読み、ユーザーの嗜好に近い銘柄を選ぶ
-  - aroma（香り）
-  - palate（味わい）
-  - finish（余韻）
-  - flavor_json などの情報を総合的に判断する
-- 候補銘柄は最大で3本までとし、その中から特に「最も寄り添う1本」を選ぶ
-- 高級バー風の落ち着いた文章で推薦理由を書く
+【Act】
+- 追加質問は一度に1つだけ
+- RAGで与えられた候補から最大3本までピックアップし、
+  その中から最も寄り添う1本を選んで理由とともに説明する
 
-【Reflect（振り返り）】
-- 今の提案がユーザーの嗜好と矛盾していないか内部で確認する
-- 先ほどの質問で理解は十分だったか自問する
-- 比較候補の説明に偏りがないか確認する
-- 必要であれば提案内容を軽く修正してからユーザーに返す
-
-※ Reflect の思考内容もユーザーには見せず、あなたの内部だけで行うこと。
-
-【ユーザーモデル（セッション内メモリ：中程度の粒度）】
-このAPIでは、セッションをまたいだ長期記憶は保持しません。
-ただし、1回のリクエストの中で与えられたメッセージ履歴から、以下のような嗜好傾向を読み取って活用してください。
-
-- 甘い／辛い
-- フルーティ／ウッディ
-- スモーキー／ノンスモーキー
-- 軽やか／濃厚
-- 飲み方（ストレート／ロック／ハイボール）
-- 予算帯
-- 飲むシーン（自宅／ギフト／特別な日）
-- ウイスキー経験値（入門〜中級）
-
-これらは「内部的な理解」として扱い、ユーザーに構造化データとしてそのまま見せる必要はありません。
-ただし、ユーザーへの説明や提案の精度を高めるために積極的に活用してください。
-
-【質問生成ルール】
-- 質問は一度に1つだけ行うこと
-- Yes/No だけで答えさせるのではなく、できるだけ選択肢やイメージで聞く
-- 上から目線の物言いは避け、静かに寄り添うような男性バーテンダーとして話す
-- 例：
-  - 「もし差し支えなければ、もう少しだけお好みを伺わせてください。」
-  - 「甘さといってもいくつか種類がございます。バニラのような甘さか、ドライフルーツのような甘さか、どちらに近いでしょうか。」
-
-【RAGコンテキストの使い方】
-- システムやAPIから渡される「RAG_CONTEXT」には、ウイスキー銘柄の情報が含まれています
-- そこに書かれている内容のみを前提として、銘柄名・特徴・香り・味わいを判断してください
-- 存在しない銘柄を作らないこと
-- RAGコンテキストにない情報を「事実」として断定しないこと
-- 情報が足りない場合は、その旨を丁寧に伝えたうえで、一般論として分かる範囲で案内してください
-
-【出力スタイル（高級バー風）】
-ユーザーへの返答は、以下のようなトーンと構造を基本としてください。
-
-- 落ち着いた男性バーテンダー
-- 高級バーのカウンターで向き合っているような距離感
-- 丁寧で穏やかな語り口
-- 専門性は高いが、押しつけがましくない
-- 「〜かと思います」「〜のように感じられるでしょう」といった柔らかい表現を好んで使う
-
-返答の構造例：
-
-1. まず「おすすめの1本」を静かに提示する
-2. 次に、香り／味わい／余韻の観点から理由を説明する
-3. 必要に応じて「比較候補」を2本まで簡潔に紹介する
-4. もし追加で知るべきことがあれば、最後にそっと質問を添える
-
-フォーマット例：
-
-「
-お話を伺った限りでは、◯◯が最も寄り添う1本かと思います。
-
-【選んだ理由】
-・香り：〜〜のような印象があり、〜〜というニュアンスが感じられます。
-・味わい：〜〜で、〜〜な余韻が続きます。
-・全体として：先ほど伺った「〜〜がお好き」というお好みに、静かに重なる一本です。
-
-【比較候補】
-△△：こちらは◯◯より甘味が強く、今回のお好みとは少し方向が異なります。
-□□：ややスモーキーで、求めておられた軽さとは違う印象がございます。
-
-差し支えなければ、飲み方についてもう少しお聞かせいただけますか。
-ハイボールを中心に楽しまれるか、それともストレートやロックもお考えでしょうか。
-」
+【Reflect】
+- 今の提案がユーザーの好みと矛盾していないか確認
+- 表現がバーテンダーとして自然か確認
 
 【禁止事項】
-- 架空のウイスキー銘柄を作らないこと
-- 記事やDBに存在しない事実を「確定情報」として語らないこと
-- アルコールの過剰摂取や危険行為を助長しないこと
-- 医療的な診断・健康効果を断定しないこと
-- ユーザーの意図を無視した一方的な案内をしないこと
-- 香味の表現があまりにも粗雑にならないよう注意すること
+- 架空の銘柄を作らない
+- RAGにない情報を事実のように断定しない
+- 強い断言・押し付けをしない
+- アルコール摂取を助長しない
 
-あなたは、Market Supporter AI 専属の「Whisky Diagnosis Agent」として、
-静かに寄り添い、深く理解し、最適な1本へ導くことに専念してください。
+【返答スタイル】
+- トーンは温かく、落ち着いた男性バーテンダー
+- 「〜かと思います」「〜のように感じられるでしょう」のような柔らかい表現
+- 必ず最初に「おすすめの1本」を静かに提示する
+- 次に香り・味わい・余韻を丁寧に説明
+- 比較候補は最大2本まで軽く紹介
+- 最後に、そっと追加の確認質問を添える
 `;
 
+/* -------------------------------------------------------------------------- */
+/*                               型定義                                       */
+/* -------------------------------------------------------------------------- */
 type ChatMessage = {
   role: "user" | "assistant" | "system";
   content: string;
@@ -142,6 +67,9 @@ type WhiskyAgentRequest = {
   messages: ChatMessage[];
 };
 
+/* -------------------------------------------------------------------------- */
+/*                                   API本体                                   */
+/* -------------------------------------------------------------------------- */
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as WhiskyAgentRequest;
@@ -153,6 +81,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    /* ------------------------------ 直近のユーザー発言 ------------------------------ */
     const lastUserMessage = [...body.messages]
       .reverse()
       .find((m) => m.role === "user");
@@ -164,6 +93,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    /* ------------------------------ Embedding生成 ------------------------------ */
     const embeddingRes = await openai.embeddings.create({
       model: EMBEDDING_MODEL,
       input: lastUserMessage.content,
@@ -171,11 +101,12 @@ export async function POST(req: NextRequest) {
 
     const queryEmbedding = embeddingRes.data[0].embedding;
 
+    /* ------------------------------ Supabase RPC ------------------------------ */
     const { data: matches, error } = await supabase.rpc(
       "match_whisky_embeddings",
       {
         query_embedding: queryEmbedding,
-        match_threshold: 0.5,
+        match_threshold: 0.45, // ← 推奨：0.45〜0.55
         match_count: 8,
       }
     );
@@ -185,10 +116,11 @@ export async function POST(req: NextRequest) {
     } else {
       console.log(`RPC success: Found ${matches?.length || 0} candidates`);
       if (matches && matches.length > 0) {
-        console.log("First candidate:", matches[0]);
+        console.log("Top candidate:", matches[0]);
       }
     }
 
+    /* ------------------------------ RAGコンテキスト生成 ------------------------------ */
     const ragContext =
       matches && Array.isArray(matches) && matches.length > 0
         ? matches
@@ -197,19 +129,21 @@ export async function POST(req: NextRequest) {
                 `# Candidate ${index + 1}`,
                 `brand_name: ${row.brand_name}`,
                 `expression_name: ${row.expression_name}`,
-                `type: ${row.type}`,
-                `region: ${row.region}`,
-                `country: ${row.country}`,
+                row.type ? `type: ${row.type}` : "",
+                row.region ? `region: ${row.region}` : "",
+                row.country ? `country: ${row.country}` : "",
                 row.distillery ? `distillery: ${row.distillery}` : "",
                 row.age_statement
                   ? `age_statement: ${row.age_statement}`
                   : "",
                 row.cask_type ? `cask_type: ${row.cask_type}` : "",
-                `flavor_notes: ${
-                  Array.isArray(row.flavor_notes)
-                    ? row.flavor_notes.join(", ")
-                    : row.flavor_notes
-                }`,
+                row.flavor_notes
+                  ? `flavor_notes: ${
+                      Array.isArray(row.flavor_notes)
+                        ? row.flavor_notes.join(", ")
+                        : row.flavor_notes
+                    }`
+                  : "",
                 row.aroma ? `aroma: ${row.aroma}` : "",
                 row.palate ? `palate: ${row.palate}` : "",
                 row.finish ? `finish: ${row.finish}` : "",
@@ -219,7 +153,7 @@ export async function POST(req: NextRequest) {
                 .join("\n");
             })
             .join("\n\n")
-        : "一致するウイスキーの候補は見つかりませんでした。一般的なウイスキーの知識に基づいて案内してください。";
+        : "一致するウイスキー候補がありませんでした。一般的な知識に基づいて案内してください。";
 
     const ragSystemMessage: ChatMessage = {
       role: "system",
@@ -228,18 +162,29 @@ export async function POST(req: NextRequest) {
         ragContext,
     };
 
+    /* ------------------------------ 最終応答の生成 ------------------------------ */
     const response = await openai.chat.completions.create({
       model: CHAT_MODEL,
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         ragSystemMessage,
         ...body.messages,
+        {
+          role: "system",
+          content: `
+あなたは上記RAG候補をもとに「おすすめの1本」を必ず返してください。
+候補が複数ある場合は最も相性の良い1本を選び、落ち着いたバーテンダー口調で理由を説明してください。
+候補が0件の場合でも、一般的な知識から1本を提案してください。
+比較候補は最大2本まで軽く触れてください。
+          `,
+        },
       ],
       temperature: 0.7,
     });
 
     const assistantMessage = response.choices[0]?.message;
 
+    /* ------------------------------ レスポンス ------------------------------ */
     return NextResponse.json(
       {
         reply: assistantMessage?.content,
@@ -256,4 +201,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
