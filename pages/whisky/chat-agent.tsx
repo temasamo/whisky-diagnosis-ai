@@ -135,9 +135,10 @@ export default function WhiskyChatAgent() {
           boxShadow: "0 0 8px rgba(0,0,0,0.3)",
           position: "relative",
           backgroundImage: "url('/bartender/bartender-background.jpg')",
-          backgroundSize: "60% auto",
+          backgroundSize: "100% auto",
           backgroundPosition: "center top",
-          backgroundRepeat: "no-repeat",
+          backgroundRepeat: "repeat-y",
+          backgroundAttachment: "scroll",
         }}
       >
         {/* 背景画像の上に半透明のオーバーレイ */}
@@ -151,6 +152,7 @@ export default function WhiskyChatAgent() {
             backgroundColor: "rgba(59, 43, 36, 0.7)",
             borderRadius: "12px",
             zIndex: 0,
+            opacity: 0, // 一時的にぼかしを外す
           }}
         />
         <div style={{ position: "relative", zIndex: 1 }}>
